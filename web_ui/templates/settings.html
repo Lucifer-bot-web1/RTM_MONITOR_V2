@@ -1,62 +1,73 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="header" style="margin-bottom:20px;">
-    <h1 class="page-title">System Configuration</h1>
-</div>
+<div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr); grid-template-rows: auto;">
 
-<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:20px;">
-
-    <div class="card" style="border-top:3px solid var(--accent);">
-        <h3 style="margin-top:0;"><i class="fa-solid fa-paintbrush"></i> Interface</h3>
-        <form method="post">
-            <input type="hidden" name="section" value="theme">
-            <label style="color:#94a3b8; font-size:0.8rem;">Theme Engine</label>
-            <select name="theme_style" class="form-control" style="width:100%; padding:10px; margin-top:5px; background:#1e293b; color:white; border:1px solid #333; border-radius:4px;">
-                <option value="dark">Cyber Dark (Active)</option>
-                <option value="light">Photon Light</option>
-            </select>
-            <button class="btn btn-primary" style="margin-top:15px; width:100%;">Apply Visuals</button>
-        </form>
-    </div>
-
-    <div class="card" style="border-top:3px solid #10b981;">
-        <h3 style="margin-top:0;"><i class="fa-solid fa-network-wired"></i> Ping Engine</h3>
-        <form method="post">
-            <input type="hidden" name="section" value="ping">
-
-            <label style="color:#94a3b8; font-size:0.8rem;">Interval (Seconds)</label>
-            <input name="ping_timeout" class="form-control" value="30" style="width:100%; padding:10px; margin-top:5px; background:#1e293b; color:white; border:1px solid #333; border-radius:4px;">
-
-            <label style="color:#94a3b8; font-size:0.8rem; margin-top:10px; display:block;">Threshold</label>
-            <input name="threshold" class="form-control" value="15" style="width:100%; padding:10px; margin-top:5px; background:#1e293b; color:white; border:1px solid #333; border-radius:4px;">
-
-            <button class="btn btn-primary" style="margin-top:15px; width:100%; background:#10b981;">Update Engine</button>
-        </form>
-    </div>
-
-    <div class="card" style="border-top:3px solid #f59e0b;">
-        <h3 style="margin-top:0;"><i class="fa-solid fa-database"></i> Data Persistence</h3>
-        <p style="font-size:0.9rem; color:#94a3b8;">Manage database snapshots.</p>
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <a href="{{ url_for('main.backup_download') }}" class="btn" style="flex:1; text-align:center; background:#f59e0b; color:black; font-weight:bold;">
-                <i class="fa-solid fa-download"></i> Backup
-            </a>
-            <button class="btn" style="flex:1; background:#ef4444;">
-                <i class="fa-solid fa-upload"></i> Restore
-            </button>
+    <div class="panel">
+        <div class="panel-header">Interface Settings</div>
+        <div class="panel-body">
+            <form method="post">
+                <input type="hidden" name="section" value="theme">
+                <label>Theme Mode</label>
+                <select name="theme_style" class="form-control">
+                    <option value="dark">Enterprise Dark (Active)</option>
+                    <option value="light">Light Mode</option>
+                </select>
+                <button class="btn-primary full-width" style="margin-top:10px;">Save Interface</button>
+            </form>
         </div>
     </div>
 
-    <div class="card" style="border-top:3px solid #ef4444;">
-        <h3 style="margin-top:0;"><i class="fa-solid fa-bell"></i> Alerts</h3>
-        <form method="post">
-            <input type="hidden" name="section" value="telegram">
-            <input name="token" class="form-control" placeholder="Bot Token" style="width:100%; padding:10px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333; border-radius:4px;">
-            <input name="chat_id" class="form-control" placeholder="Chat ID" style="width:100%; padding:10px; background:#1e293b; color:white; border:1px solid #333; border-radius:4px;">
-            <button class="btn btn-primary" style="margin-top:15px; width:100%; background:#ef4444;">Sync Bot</button>
-        </form>
+    <div class="panel">
+        <div class="panel-header">Polling Engine</div>
+        <div class="panel-body">
+            <form method="post">
+                <input type="hidden" name="section" value="ping">
+                <label>Ping Interval (sec)</label>
+                <input name="ping_timeout" class="form-control" value="30">
+
+                <label>Retry Threshold</label>
+                <input name="threshold" class="form-control" value="3">
+
+                <button class="btn-primary full-width" style="margin-top:10px;">Update Engine</button>
+            </form>
+        </div>
     </div>
 
+    <div class="panel">
+        <div class="panel-header">Database & Backup</div>
+        <div class="panel-body">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <a href="{{ url_for('main.backup_download') }}" class="btn-primary full-width" style="text-align:center; background:#f39c12; text-decoration:none;">
+                    <i class="fa-solid fa-download"></i> BACKUP
+                </a>
+                <button class="btn-primary full-width" style="background:#e74c3c;">
+                    <i class="fa-solid fa-upload"></i> RESTORE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">Notifications (Telegram)</div>
+        <div class="panel-body">
+            <form method="post">
+                <input type="hidden" name="section" value="telegram">
+                <label>Bot Token</label>
+                <input name="token" class="form-control" type="password" placeholder="xoxb-...">
+
+                <label>Chat ID</label>
+                <input name="chat_id" class="form-control" placeholder="-100...">
+
+                <button class="btn-primary full-width" style="margin-top:10px;">Test & Save</button>
+            </form>
+        </div>
+    </div>
 </div>
+
+<style>
+    .form-control { width: 100%; background: #0b0c0e; border: 1px solid var(--border); color: white; padding: 8px; margin-bottom: 10px; border-radius: 4px; }
+    .btn-primary { background: var(--color-blue); color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width:100%; }
+    label { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+</style>
 {% endblock %}
