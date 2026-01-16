@@ -1,14 +1,59 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2 class="page-title">Secure Terminal</h2>
-<div class="card" style="background:#000; border:1px solid #333; min-height:500px; font-family:'Courier New', monospace; color:#0f0; padding:20px;">
-    <div id="output">
-        <p>JARVIS SSH Protocol Initiated...</p>
-        <p>Target: {{ ip }}</p>
-        <p>Connection established.</p>
-        <br>
-        <span style="color:white;">admin@{{ ip }}:~#</span> <span class="cursor">_</span>
+<div class="panel" style="height: 100%; border:none;">
+    <div class="panel-header" style="background:#111; color:#2ecc71; border-bottom:1px solid #333;">
+        <i class="fa-solid fa-terminal"></i> SECURE SHELL [SSH] - {{ ip }}
+    </div>
+    <div class="panel-body" style="padding:0; display:flex; flex-direction:column; background:black;">
+        <div id="terminal-output" style="flex:1; padding:15px; font-family:'Courier New', monospace; color:#2ecc71; font-size:14px; overflow-y:auto;">
+            <div>RTM Enterprise Console v2.5.1</div>
+            <div>Copyright (c) 2026 SysAdmin Corp.</div>
+            <br>
+            <div>Connecting to remote host {{ ip }}...</div>
+            <div>Connection established.</div>
+            <br>
+            <div class="line">root@{{ ip }}:~# <span id="cursor">_</span></div>
+        </div>
+        <div style="padding:10px; border-top:1px solid #333; background:#111;">
+            <input id="cmd" type="text" style="width:100%; background:transparent; border:none; color:white; font-family:'Courier New'; font-size:14px; outline:none;" placeholder="Type command..." autofocus>
+        </div>
     </div>
 </div>
-<input type="text" style="width:100%; padding:15px; background:#111; color:white; border:none; border-top:1px solid #333; font-family:monospace;" placeholder="Enter command..." autofocus>
+
+<script>
+    const term = document.getElementById('terminal-output');
+    const input = document.getElementById('cmd');
+    const ip = "{{ ip }}";
+
+    input.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            let cmd = input.value;
+            print(`root@${ip}:~# ${cmd}`);
+            input.value = '';
+
+            // Simulate Processing
+            print('Processing request...', '#555');
+
+            fetch('/api/terminal/exec', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cmd: cmd, ip: ip })
+            })
+            .then(res => res.json())
+            .then(data => {
+                data.output.forEach(line => print(line));
+                print(''); // Spacer
+            });
+        }
+    });
+
+    function print(text, color='#2ecc71') {
+        let div = document.createElement('div');
+        div.innerText = text;
+        div.style.color = color;
+        term.appendChild(div);
+        term.scrollTop = term.scrollHeight;
+    }
+</script>
 {% endblock %}
