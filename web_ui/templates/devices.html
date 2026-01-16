@@ -2,90 +2,83 @@
 
 {% block content %}
 <div class="header">
-    <h1 class="page-title">Device Asset Management</h1>
+    <h1 class="page-title">Device Assets</h1>
 </div>
 
 <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 20px;">
 
     <div class="card">
-        <h3><i class="fa-solid fa-plus-circle"></i> Add New Node</h3>
+        <h3><i class="fa-solid fa-plus-circle"></i> Add Node</h3>
 
-        <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:10px;">
-            <button onclick="showTab('single')" class="btn" style="padding:5px 10px; font-size:12px;">Single Add</button>
-            <button onclick="showTab('scan')" class="btn" style="padding:5px 10px; font-size:12px; background:#475569;">Bulk Scan</button>
+        <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+            <button onclick="showTab('single')" class="btn" style="padding:5px 10px; font-size:12px;">Single</button>
+            <button onclick="showTab('scan')" class="btn" style="padding:5px 10px; font-size:12px; background:#475569;">Scanner</button>
         </div>
 
         <form id="form-single" action="{{ url_for('main.devices_add') }}" method="POST">
             <input type="hidden" name="mode" value="single">
 
-            <label style="font-size:12px; color:#94a3b8;">Parent Device (Uplink)</label>
-            <select name="uplink_id" class="form-control" style="background:#1e293b; color:white;">
-                <option value="0">-- Root Device (e.g. Core Router) --</option>
+            <label style="font-size:12px; color:#94a3b8;">Uplink (Parent)</label>
+            <select name="uplink_id" class="form-control" style="width:100%; padding:8px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;">
+                <option value="0">-- Root --</option>
                 {% for d in devices %}
-                <option value="{{ d.id }}">{{ d.name }} ({{ d.ip }})</option>
+                <option value="{{ d.id }}">{{ d.name }}</option>
                 {% endfor %}
             </select>
 
-            <input type="text" name="ip" placeholder="IP Address" class="form-control" required>
-            <input type="text" name="name" placeholder="Device Name" class="form-control" required>
-            <select name="device_type" class="form-control" style="background:#1e293b; color:white;">
+            <input type="text" name="ip" placeholder="IP Address" style="width:100%; padding:10px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;" required>
+            <input type="text" name="name" placeholder="Device Name" style="width:100%; padding:10px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;" required>
+            <select name="device_type" style="width:100%; padding:10px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;">
                 <option value="SWITCH">Switch</option>
-                <option value="OLT">OLT</option>
                 <option value="ROUTER">Router</option>
                 <option value="SERVER">Server</option>
             </select>
-            <button type="submit" class="btn btn-primary" style="width:100%">Add to Topology</button>
+            <button type="submit" class="btn btn-primary" style="width:100%">Initialize</button>
         </form>
 
         <form id="form-scan" action="{{ url_for('main.devices_add') }}" method="POST" style="display:none;">
             <input type="hidden" name="mode" value="scan">
-            <p style="font-size:12px; color:#94a3b8; margin-bottom:10px;">Quickly add a range of IPs.</p>
+            <p style="font-size:12px; color:#94a3b8;">IP Range Scanner</p>
 
-            <label style="font-size:12px; color:#94a3b8;">Parent Device (Uplink)</label>
-            <select name="uplink_id_scan" class="form-control" style="background:#1e293b; color:white;">
-                <option value="0">-- Root Device --</option>
+            <label style="font-size:12px; color:#94a3b8;">Uplink</label>
+            <select name="uplink_id_scan" class="form-control" style="width:100%; padding:8px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;">
+                <option value="0">-- Root --</option>
                 {% for d in devices %}
                 <option value="{{ d.id }}">{{ d.name }}</option>
                 {% endfor %}
             </select>
 
             <div style="display:flex; gap:5px;">
-                <input type="text" name="subnet" placeholder="192.168.1." class="form-control" style="flex:2">
-                <input type="number" name="start_ip" placeholder="1" class="form-control" style="flex:1">
-                <input type="number" name="end_ip" placeholder="254" class="form-control" style="flex:1">
+                <input type="text" name="subnet" placeholder="192.168.1." style="flex:2; padding:8px; background:#1e293b; color:white; border:1px solid #333;">
+                <input type="number" name="start_ip" placeholder="1" style="flex:1; padding:8px; background:#1e293b; color:white; border:1px solid #333;">
+                <input type="number" name="end_ip" placeholder="254" style="flex:1; padding:8px; background:#1e293b; color:white; border:1px solid #333;">
             </div>
-            <button type="submit" class="btn btn-success" style="width:100%">Start Scan & Add</button>
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px; background:#10b981;">Run Scan</button>
         </form>
     </div>
 
-    <div class="card" style="overflow-y:auto; max-height:500px;">
-        <h3><i class="fa-solid fa-list"></i> Device Inventory</h3>
-        <table class="data-table">
+    <div class="card" style="overflow-y:auto; max-height:600px;">
+        <h3><i class="fa-solid fa-list"></i> Inventory</h3>
+        <table class="data-table" style="width:100%; border-collapse:collapse;">
             <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>Name</th>
-                    <th>IP</th>
-                    <th>Uplink</th>
-                    <th>Action</th>
+                <tr style="background:rgba(255,255,255,0.05); text-align:left;">
+                    <th style="padding:10px;">Status</th>
+                    <th style="padding:10px;">Name</th>
+                    <th style="padding:10px;">IP</th>
+                    <th style="padding:10px;">Uplink</th>
+                    <th style="padding:10px;">Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for d in devices %}
-                <tr>
-                    <td><span class="status-badge {% if d.state == 'UP' %}status-up{% else %}status-down{% endif %}">{{ d.state }}</span></td>
-                    <td>{{ d.name }}</td>
-                    <td style="color:var(--accent-blue);">{{ d.ip }}</td>
-                    <td>
-                        {% if d.uplink %}
-                            {{ d.uplink.name }}
-                        {% else %}
-                            <span style="color:#64748b;">Root</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <form action="{{ url_for('main.device_delete', dev_id=d.id) }}" method="POST" style="display:inline;">
-                            <button class="btn btn-danger" style="padding:5px 10px; font-size:12px;">Del</button>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px;"><span class="badge {{ d.state.lower() }}">{{ d.state }}</span></td>
+                    <td style="padding:10px;">{{ d.name }}</td>
+                    <td style="padding:10px; color:var(--accent);">{{ d.ip }}</td>
+                    <td style="padding:10px;">{{ d.uplink.name if d.uplink else 'Root' }}</td>
+                    <td style="padding:10px;">
+                        <form action="{{ url_for('main.device_delete', dev_id=d.id) }}" method="POST">
+                            <button class="btn btn-danger" style="padding:2px 8px; font-size:0.7rem;">DEL</button>
                         </form>
                     </td>
                 </tr>
