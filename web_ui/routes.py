@@ -7,10 +7,9 @@ from core.security import SecurityManager
 from core.audio_mgr import AudioManager
 from core.backup_mgr import BackupManager
 
-# --- BLUEPRINT CONFIGURATION (THE FIX) ---
-# template_folder='templates' -> Looks inside web_ui/templates
-# static_folder='static'      -> Looks inside web_ui/static
-# static_url_path='/static'   -> Forces the URL http://localhost/static to map here
+# --- 🔥 THE FIX IS HERE 🔥 ---
+# static_folder='static'      -> Soludhu: "Files inga (web_ui/static) irukku"
+# static_url_path='/static'   -> Soludhu: "Browser /static nu ketta, inga irundhu edu"
 bp = Blueprint('main', __name__,
                template_folder='templates',
                static_folder='static',
@@ -21,13 +20,13 @@ bp = Blueprint('main', __name__,
 @bp.before_request
 def check_expiry_lock():
     # Allow static files (CSS/JS) to load even if expired
-    allowed = ['main.login', 'main.logout', 'main.recovery', 'static']
+    allowed = ['main.login', 'main.logout', 'main.recovery']
 
-    if request.endpoint == 'main.settings' and current_user.is_authenticated and current_user.role == 'ADMIN':
+    # FIX: Allow any request starting with /static to pass (CSS/JS loading)
+    if request.path.startswith('/static'):
         return
 
-    # Fix: Allow static file requests to pass through
-    if request.endpoint == 'static' or (request.endpoint and 'static' in request.endpoint):
+    if request.endpoint == 'main.settings' and current_user.is_authenticated and current_user.role == 'ADMIN':
         return
 
     if request.endpoint in allowed:
@@ -75,7 +74,7 @@ def dashboard():
     down = Device.query.filter_by(state="DOWN").count()
     paused = Device.query.filter_by(is_paused=True).count()
     devices = Device.query.all()
-    # 'now' variable added for the clock in new UI
+    # 'now' variable added for clock
     return render_template('dashboard.html', up=up, down=down, paused=paused, devices=devices, now=datetime.now())
 
 
@@ -134,7 +133,6 @@ def settings():
         return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
-        # Logic to save settings can go here
         flash("Settings updated (Demo Mode).", "success")
         return redirect(url_for('main.settings'))
 
@@ -163,7 +161,7 @@ def backup_restore():
     return redirect(url_for('main.settings'))
 
 
-# --- RECOVERY (Fixes the missing link error) ---
+# --- RECOVERY ---
 @bp.route('/recovery')
 def recovery():
     return "<h1>Recovery Mode</h1><p>Contact Support.</p><a href='/login'>Back</a>"
