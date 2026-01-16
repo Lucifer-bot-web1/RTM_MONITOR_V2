@@ -5,7 +5,8 @@ import bcrypt
 
 db = SQLAlchemy()
 
-# --- 1. SETTING MODEL (Missing in your file) ---
+
+# --- 1. SETTING MODEL ---
 class Setting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(64), unique=True, nullable=False)
@@ -32,6 +33,7 @@ class Setting(db.Model):
         except:
             db.session.rollback()
 
+
 # --- 2. USER MODEL ---
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -55,18 +57,27 @@ class User(db.Model, UserMixin):
         if not self.expires_at: return False
         return datetime.now(timezone.utc) > self.expires_at.replace(tzinfo=timezone.utc)
 
-# --- 3. DEVICE MODEL ---
+
+# --- 3. DEVICE MODEL (UPDATED FOR TOPOLOGY) ---
 class Device(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(64), unique=True, nullable=False)
     name = db.Column(db.String(128), nullable=False)
     description = db.Column(db.Text)
-    device_type = db.Column(db.String(16), default="SWITCH")
-    brand = db.Column(db.String(64))
+    device_type = db.Column(db.String(16), default="SWITCH")  # SWITCH, OLT, ROUTER, SERVER
+
+    # --- NEW: TOPOLOGY LINKS ---
+    uplink_device_id = db.Column(db.Integer, db.ForeignKey('device.id'), nullable=True)
+    location = db.Column(db.String(100), default="Server Room")
+
     state = db.Column(db.String(16), default="UNKNOWN")
     is_paused = db.Column(db.Boolean, default=False)
     is_stopped = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Self-referential relationship (To get children)
+    children = db.relationship('Device', backref=db.backref('uplink', remote_side=[id]))
+
 
 # --- 4. AUDIT MODEL ---
 class Audit(db.Model):
