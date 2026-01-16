@@ -2,70 +2,84 @@
 
 {% block content %}
 <div class="header">
-    <h1 class="page-title">Network Overview</h1>
-    <div class="date-display" style="color: var(--text-secondary);">
-        {{ now.strftime('%Y-%m-%d %H:%M:%S') }}
-    </div>
+    <h1 class="page-title">Network Operations Center</h1>
+    <div style="color:var(--text-secondary);">{{ now.strftime('%Y-%m-%d %H:%M:%S') }}</div>
 </div>
 
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon blue">
-            <i class="fa-solid fa-layer-group"></i>
-        </div>
+    <div class="stat-card" style="border-left: 4px solid var(--accent-blue);">
+        <div class="stat-icon blue"><i class="fa-solid fa-server"></i></div>
         <div class="stat-info">
-            <h3 id="total-count">{{ devices|length }}</h3>
-            <p>Total Managed Devices</p>
+            <h3>{{ total }}</h3>
+            <p>Total Devices</p>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon green">
-            <i class="fa-solid fa-check-circle"></i>
-        </div>
+    <div class="stat-card" style="border-left: 4px solid var(--success-green);">
+        <div class="stat-icon green"><i class="fa-solid fa-check"></i></div>
         <div class="stat-info">
-            <h3> -- </h3>
-            <p>Devices Online (UP)</p>
+            <h3>{{ up }}</h3>
+            <p>Online</p>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon red">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-        </div>
+    <div class="stat-card" style="border-left: 4px solid var(--danger-red);">
+        <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
         <div class="stat-info">
-            <h3> -- </h3>
-            <p>Critical Alerts (DOWN)</p>
+            <h3>{{ down }}</h3>
+            <p>Critical / Down</p>
         </div>
     </div>
 </div>
 
-<div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Status</th>
-                <th>Device Name</th>
-                <th>IP Address</th>
-                <th>Type</th>
-                <th>Last Seen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for d in devices %}
-            <tr id="row_{{ d.ip.replace('.','_') }}">
-                <td>
-                    <span class="status-badge {% if d.status == 'UP' %}status-up{% else %}status-down{% endif %}">
-                        {{ d.status }}
-                    </span>
-                </td>
-                <td style="font-weight: 600;">{{ d.name }}</td>
-                <td style="font-family: monospace; color: var(--accent-blue);">{{ d.ip }}</td>
-                <td>{{ d.device_type|upper }}</td>
-                <td style="color: var(--text-secondary);">
-                    {% if d.last_seen %}{{ d.last_seen.strftime('%H:%M:%S') }}{% else %}Never{% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card" style="margin-bottom: 20px; height: 500px; display:flex; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3><i class="fa-solid fa-diagram-project"></i> Live Topology Map</h3>
+        <button onclick="refreshMap()" class="btn btn-primary" style="padding:5px 10px; font-size:12px;">Refresh Map</button>
+    </div>
+    <div id="mynetwork" style="flex:1; background: #0b1120; border-radius: 8px; border: 1px solid #334155;"></div>
 </div>
+
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+    var network = null;
+
+    function drawMap() {
+        fetch('/api/topology')
+        .then(response => response.json())
+        .then(data => {
+            var container = document.getElementById('mynetwork');
+
+            var options = {
+                nodes: {
+                    shape: 'dot',
+                    size: 20,
+                    font: { size: 14, color: '#ffffff' },
+                    borderWidth: 2
+                },
+                edges: {
+                    width: 2,
+                    color: { color: '#64748b', highlight: '#3b82f6' },
+                    smooth: { type: 'continuous' }
+                },
+                physics: {
+                    stabilization: false,
+                    barnesHut: { gravitationalConstant: -8000, springConstant: 0.04, springLength: 95 }
+                },
+                layout: {
+                    randomSeed: 2
+                }
+            };
+
+            network = new vis.Network(container, data, options);
+        });
+    }
+
+    // Load Map on Start
+    drawMap();
+
+    // Auto-refresh map every 10 seconds to show Red/Green status
+    setInterval(drawMap, 10000);
+
+    function refreshMap() { drawMap(); }
+</script>
 {% endblock %}
