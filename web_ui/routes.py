@@ -1,5 +1,6 @@
 import json
 import socket
+import time
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, login_required, logout_user, current_user
@@ -7,15 +8,21 @@ from core.database import db, User, Device, Setting
 from core.security import SecurityManager
 from core.audio_mgr import AudioManager
 from core.backup_mgr import BackupManager
-from config import Config
 
 bp = Blueprint('main', __name__, template_folder='templates')
+
+
+# --- 🔥 FIX: GLOBAL CONTEXT PROCESSOR ---
+# Idhu ella templates-kum 'now' variable-a automatic-a anuppum.
+@bp.context_processor
+def inject_now():
+    return {'now': datetime.now()}
 
 
 # --- MIDDLEWARE ---
 @bp.before_request
 def check_expiry_lock():
-    allowed = ['main.login', 'main.logout', 'main.recovery', 'static']
+    allowed = ['main.login', 'main.logout', 'static']
     if request.path.startswith('/static'): return
     if request.endpoint == 'main.settings' and current_user.is_authenticated and current_user.role == 'ADMIN': return
     if request.endpoint in allowed: return
@@ -25,7 +32,7 @@ def check_expiry_lock():
         return redirect(url_for('main.login'))
 
 
-# --- AUTH ---
+# --- AUTH ROUTES ---
 @bp.route('/', methods=['GET', 'POST'])
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -37,7 +44,7 @@ def login():
         if user and user.check_password(p):
             login_user(user)
             return redirect(url_for('main.dashboard'))
-        flash("Access Denied: Invalid Identity", "danger")
+        flash("Invalid Credentials", "danger")
     return render_template('login.html')
 
 
@@ -47,7 +54,7 @@ def logout():
     return redirect(url_for('main.login'))
 
 
-# --- DASHBOARD ---
+# --- DASHBOARD & MAP API ---
 @bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -55,20 +62,7 @@ def dashboard():
     down = Device.query.filter_by(state="DOWN").count()
     total = Device.query.count()
     devices = Device.query.all()
-    return render_template('dashboard.html', up=up, down=down, total=total, devices=devices, now=datetime.now())
-
-
-# --- FULL MAP VIEW (NEW) ---
-@bp.route('/map/full')
-@login_required
-def map_full():
-    return render_template(
-        'base.html')  # We will handle full map via JS/Dashboard logic or separate template if needed.
-    # For now, let's keep it simple: Dashboard has the logic.
-    # Actually, let's create a dedicated route for fullscreen if needed,
-    # but the dashboard popup solution is cleaner.
-    # Redirecting back to dashboard for now as logic is embedded there.
-    return redirect(url_for('main.dashboard'))
+    return render_template('dashboard.html', up=up, down=down, total=total, devices=devices)
 
 
 @bp.route('/api/topology')
@@ -77,22 +71,28 @@ def api_topology():
     devices = Device.query.all()
     nodes = []
     edges = []
+
     for d in devices:
-        color = "#10b981" if d.state == "UP" else "#ef4444"
-        shape = "box" if d.device_type == "SWITCH" else "ellipse"
+        # Assign Group for Icons
+        group = d.device_type if d.device_type else "SWITCH"
+
+        # Color Logic
+        color = "#2ecc71" if d.state == "UP" else "#ff4d4d"
+
         nodes.append({
             "id": d.id,
             "label": f"{d.name}\n({d.ip})",
-            "color": {"background": color, "border": "white"},
-            "shape": shape,
-            "font": {"color": "white"}
+            "group": group,  # Used by Vis.js for Icons
+            "status": d.state
         })
+
         if d.uplink_device_id:
             edges.append({"from": d.uplink_device_id, "to": d.id})
+
     return jsonify({"nodes": nodes, "edges": edges})
 
 
-# --- DEVICES ---
+# --- DEVICES MANAGEMENT ---
 @bp.route('/devices')
 @login_required
 def devices():
@@ -113,29 +113,22 @@ def devices_add():
         if uplink_id == "0": uplink_id = None
 
         if not ip or not name:
-            flash("Missing Data: IP and Name required.", "danger")
+            flash("IP and Name required.", "danger")
             return redirect(url_for('main.devices'))
 
         if not Device.query.filter_by(ip=ip).first():
             new_dev = Device(ip=ip, name=name, device_type=dtype, uplink_device_id=uplink_id)
             db.session.add(new_dev)
             db.session.commit()
-            flash(f"Node {name} Initialized.", "success")
+            flash(f"Device {name} Added.", "success")
         else:
-            flash("Target IP Collision Detected.", "warning")
+            flash("IP Already Exists.", "warning")
 
     elif mode == 'scan':
-        # FIX: Robust Error Handling
         try:
             subnet = request.form.get('subnet')
-            start_str = request.form.get('start_ip')
-            end_str = request.form.get('end_ip')
-
-            if not subnet or not start_str or not end_str:
-                raise ValueError("Empty Fields")
-
-            start = int(start_str)
-            end = int(end_str)
+            start = int(request.form.get('start_ip'))
+            end = int(request.form.get('end_ip'))
             uplink_id = request.form.get('uplink_id_scan')
             if uplink_id == "0": uplink_id = None
 
@@ -146,14 +139,10 @@ def devices_add():
                     d = Device(ip=target_ip, name=f"Auto-{i}", device_type="UNKNOWN", uplink_device_id=uplink_id)
                     db.session.add(d)
                     count += 1
-
             db.session.commit()
-            flash(f"Scanner Complete. {count} Nodes Integrated.", "success")
-
+            flash(f"Scanned & Added {count} devices.", "success")
         except ValueError:
-            flash("Input Error: Check IP Range values.", "danger")
-        except Exception as e:
-            flash(f"System Error: {str(e)}", "danger")
+            flash("Invalid Range Input.", "danger")
 
     return redirect(url_for('main.devices'))
 
@@ -165,15 +154,44 @@ def device_delete(dev_id):
     if d:
         db.session.delete(d)
         db.session.commit()
-        flash("Device Removed from Grid.", "success")
     return redirect(url_for('main.devices'))
 
 
-# --- TERMINAL ---
+# --- TERMINAL (SIMULATED) ---
 @bp.route('/terminal')
 @login_required
 def terminal():
-    return render_template('terminal.html', ip="Select Target")
+    # Pass the first available device IP for convenience
+    first_device = Device.query.first()
+    target_ip = first_device.ip if first_device else "127.0.0.1"
+    return render_template('terminal.html', ip=target_ip)
+
+
+@bp.route('/api/terminal/exec', methods=['POST'])
+@login_required
+def terminal_exec():
+    # Simulation of a backend command execution
+    cmd = request.json.get('cmd')
+    ip = request.json.get('ip')
+
+    if cmd == "ping":
+        # Simulate Ping Output
+        return jsonify({
+            "output": [
+                f"Pinging {ip} with 32 bytes of data:",
+                f"Reply from {ip}: bytes=32 time=2ms TTL=64",
+                f"Reply from {ip}: bytes=32 time=3ms TTL=64",
+                f"Reply from {ip}: bytes=32 time=2ms TTL=64",
+                f"Reply from {ip}: bytes=32 time=4ms TTL=64",
+                "",
+                f"Ping statistics for {ip}:",
+                "    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)"
+            ]
+        })
+    elif cmd == "status":
+        return jsonify({"output": ["System Status: ONLINE", "Uptime: 48 Hours", "Load: Nominal"]})
+    else:
+        return jsonify({"output": [f"Command '{cmd}' not recognized or permission denied."]})
 
 
 # --- SETTINGS ---
@@ -183,19 +201,10 @@ def settings():
     if current_user.role != 'ADMIN': return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
-        # Simple save logic placeholder
-        flash("Configuration Updated.", "success")
+        flash("Settings Saved.", "success")
         return redirect(url_for('main.settings'))
 
     return render_template('settings.html', themes=["dark"], current_theme="dark", templates={})
-
-
-# --- UTILS ---
-@bp.route('/api/trigger_alarm', methods=['POST'])
-@login_required
-def trigger_alarm_api():
-    AudioManager.play_alarm(5)
-    return jsonify({"status": "ok"})
 
 
 @bp.route('/backup/download')
@@ -208,8 +217,3 @@ def backup_download():
 @login_required
 def backup_restore():
     return redirect(url_for('main.settings'))
-
-
-@bp.route('/recovery')
-def recovery():
-    return "Recovery Console"
