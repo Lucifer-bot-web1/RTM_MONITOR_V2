@@ -7,26 +7,28 @@
     <div class="panel" style="grid-column: span 1;">
         <div class="panel-header">
             <span>Network Health Overview</span>
-            <i class="fa-solid fa-ellipsis-vertical"></i>
+            <i class="fa-solid fa-ellipsis-vertical" style="cursor:pointer;"></i>
         </div>
         <div class="panel-body">
-            <div style="margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
+            <div style="margin-bottom: 10px; font-size: 10px; color: var(--text-muted); font-weight:bold;">
                 DEVICE STATUS MATRIX
             </div>
             <div class="honeycomb-grid">
-                {% for d in devices %}
-                    <div class="hex {% if d.state == 'UP' %}good{% else %}crit{% endif %}"
-                         title="{{ d.name }} - {{ d.ip }}">
-                    </div>
-                {% endfor %}
-                {% for i in range(20) %}
-                    <div class="hex" style="opacity: 0.3;"></div>
-                {% endfor %}
+                {% if devices %}
+                    {% for d in devices %}
+                        <div class="hex {% if d.state == 'UP' %}good{% else %}crit{% endif %}"
+                             title="{{ d.name }} - {{ d.ip }}">
+                             </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color:var(--text-muted); font-size:11px; padding:20px;">No Devices</div>
+                {% endif %}
+                {% for i in range(10) %} <div class="hex" style="opacity: 0.1; background:#333;"></div> {% endfor %}
             </div>
 
-            <div style="margin-top: 20px; display:flex; gap: 15px; font-size: 11px;">
+            <div style="margin-top: auto; display:flex; gap: 15px; font-size: 10px; padding-top:10px;">
                 <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:var(--color-crit)"></div> CRIT</div>
-                <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:var(--color-major)"></div> MAJOR</div>
+                <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:var(--color-major)"></div> WARN</div>
                 <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:var(--color-good)"></div> GOOD</div>
             </div>
         </div>
@@ -34,119 +36,104 @@
 
     <div class="panel" style="grid-column: span 1;">
         <div class="panel-header">Interface Availability</div>
-        <div class="panel-body" style="display:flex; align-items:center; justify-content:center;">
-            <div style="height: 180px; width: 180px;">
+        <div class="panel-body" style="display:flex; align-items:center; justify-content:center; position:relative;">
+            <div style="height: 160px; width: 160px;">
                 <canvas id="availabilityChart"></canvas>
             </div>
-            <div style="position:absolute; text-align:center;">
-                <div style="font-size: 24px; font-weight:bold;">{{ total }}</div>
-                <div style="font-size: 10px; color:var(--text-muted);">TOTAL</div>
+            <div style="position:absolute; text-align:center; pointer-events:none;">
+                <div style="font-size: 28px; font-weight:bold; color:var(--text-main);">{{ total }}</div>
+                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px;">TOTAL</div>
             </div>
         </div>
     </div>
-
-    <div class="panel" style="grid-column: span 2;">
-        <div class="panel-header">Alert Count</div>
-        <div class="panel-body" style="display:flex; align-items:center; justify-content:space-around;">
-            <div class="alert-circle" style="border-color: var(--color-crit); color: var(--color-crit);">
-                <h2>{{ down }}</h2><span>DOWN</span>
-            </div>
-            <div class="alert-circle" style="border-color: var(--color-major); color: var(--color-major);">
-                <h2>0</h2><span>CRIT</span>
-            </div>
-            <div class="alert-circle" style="border-color: var(--color-warn); color: var(--color-warn);">
-                <h2>0</h2><span>WARN</span>
-            </div>
-            <div class="alert-circle" style="border-color: var(--border); color: var(--text-muted);">
-                <h2>0</h2><span>INFO</span>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<div class="dashboard-grid" style="margin-top: 15px;">
 
     <div class="panel" style="grid-column: span 2;">
         <div class="panel-header">
-            <span>Top Network Monitor by Latency</span>
-            <i class="fa-solid fa-expand"></i>
+            <span>Live Topology Map</span>
+            <button onclick="openMapModal()" style="background:none; border:none; color:var(--color-blue); cursor:pointer; font-size:11px;">
+                <i class="fa-solid fa-expand"></i> FULL SCREEN
+            </button>
         </div>
-        <div class="panel-body" style="padding:0;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>MONITOR</th>
-                        <th>LATENCY</th>
-                        <th>STATUS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for d in devices %}
-                    <tr>
-                        <td style="color: var(--color-blue);">{{ d.name }} <br><span style="color:var(--text-muted); font-size:10px;">{{ d.ip }}</span></td>
-                        <td>
-                            <span id="rtt_{{ d.id }}" style="font-family:monospace;">-- ms</span>
-                        </td>
-                        <td>
-                            {% if d.state == 'UP' %}
-                                <span style="color:var(--color-good);">● Online</span>
-                            {% else %}
-                                <span style="color:var(--color-crit);">● Offline</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="panel-body" style="padding:0; background:#0f1012;">
+            <div id="mininetwork" style="height:100%; width:100%;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="margin-top: 15px; grid-template-rows: 250px;">
+
+    <div class="panel" style="grid-column: span 1;">
+        <div class="panel-header">Alert Summary</div>
+        <div class="panel-body" style="display:flex; flex-direction:column; justify-content:space-around;">
+             <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                 <span style="color:var(--color-crit); font-weight:bold;">CRITICAL</span>
+                 <span class="badge" style="background:var(--color-crit); color:white;">{{ down }}</span>
+             </div>
+             <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                 <span style="color:var(--color-warn); font-weight:bold;">WARNING</span>
+                 <span class="badge" style="background:var(--color-warn); color:black;">0</span>
+             </div>
+             <div style="display:flex; align-items:center; justify-content:space-between;">
+                 <span style="color:var(--color-good); font-weight:bold;">NORMAL</span>
+                 <span class="badge" style="background:var(--color-good); color:black;">{{ up }}</span>
+             </div>
         </div>
     </div>
 
-    <div class="panel" style="grid-column: span 2;">
-        <div class="panel-header">Network Flow / Volume</div>
+    <div class="panel" style="grid-column: span 3;">
+        <div class="panel-header">Network Traffic Flow (Mb/s)</div>
         <div class="panel-body">
-            <canvas id="flowChart" style="height: 100%; width: 100%;"></canvas>
+            <canvas id="flowChart"></canvas>
         </div>
     </div>
 
 </div>
 
+<div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-body); z-index:9999;">
+    <div style="height:50px; background:var(--bg-header); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; padding:0 20px;">
+        <span style="font-weight:bold; color:var(--color-blue);"><i class="fa-solid fa-sitemap"></i> NETWORK TOPOLOGY</span>
+        <button onclick="closeMapModal()" style="background:#ff4d4d; border:none; color:white; padding:5px 15px; border-radius:4px; cursor:pointer;">CLOSE [ESC]</button>
+    </div>
+    <div id="fullnetwork" style="width:100%; height:calc(100% - 50px);"></div>
+</div>
+
 <script>
-    // --- 1. DONUT CHART CONFIG ---
+    // --- 1. DONUT CHART ---
     const ctxAvail = document.getElementById('availabilityChart').getContext('2d');
     new Chart(ctxAvail, {
         type: 'doughnut',
         data: {
-            labels: ['UP', 'DOWN'],
+            labels: ['Up', 'Down'],
             datasets: [{
                 data: [{{ up }}, {{ down }}],
                 backgroundColor: ['#2ecc71', '#ff4d4d'],
                 borderWidth: 0,
-                cutout: '85%'
+                cutout: '80%'
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } }
         }
     });
 
-    // --- 2. FLOW CHART CONFIG (Fake Data for Visual) ---
+    // --- 2. TRAFFIC CHART (Mock Data for Visual) ---
     const ctxFlow = document.getElementById('flowChart').getContext('2d');
     new Chart(ctxFlow, {
         type: 'line',
         data: {
-            labels: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25'],
+            labels: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25', '10:30'],
             datasets: [{
-                label: 'Inbound Traffic (Mb)',
-                data: [12, 19, 3, 5, 2, 30],
+                label: 'Inbound',
+                data: [12, 19, 3, 5, 2, 30, 45],
                 borderColor: '#0984e3',
                 backgroundColor: 'rgba(9, 132, 227, 0.1)',
                 fill: true,
                 tension: 0.4
             }, {
-                label: 'Outbound Traffic (Mb)',
-                data: [5, 10, 15, 20, 10, 5],
+                label: 'Outbound',
+                data: [5, 10, 15, 20, 10, 5, 15],
                 borderColor: '#feca57',
                 borderDash: [5, 5],
                 tension: 0.4
@@ -161,6 +148,59 @@
             },
             plugins: { legend: { labels: { color: '#8b92a1' } } }
         }
+    });
+
+    // --- 3. MAP LOGIC (Vis.js) ---
+    function loadMap(containerId) {
+        fetch('/api/topology')
+        .then(response => response.json())
+        .then(data => {
+            var container = document.getElementById(containerId);
+            var options = {
+                nodes: {
+                    shape: 'dot',
+                    size: 20,
+                    font: { color: '#fff', size: 12, face: 'Roboto' },
+                    borderWidth: 2,
+                    shadow: true
+                },
+                // Define Groups for Icons
+                groups: {
+                    SWITCH: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf6ff', size: 30, color: '#0984e3', weight: 'bold' } },
+                    ROUTER: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf233', size: 30, color: '#e67e22', weight: 'bold' } },
+                    SERVER: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf0c0', size: 30, color: '#2ecc71', weight: 'bold' } },
+                    OLT:    { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf1eb', size: 30, color: '#9b59b6', weight: 'bold' } }
+                },
+                edges: { color: '#636e72', width: 2, smooth: { type: 'dynamic' } },
+                physics: { stabilization: false },
+                layout: { randomSeed: 2 }
+            };
+
+            // Assign default group if missing
+            data.nodes = data.nodes.map(n => {
+                n.group = n.group || 'SWITCH';
+                return n;
+            });
+
+            new vis.Network(container, data, options);
+        });
+    }
+
+    // Load Mini Map
+    loadMap('mininetwork');
+
+    // Full Screen Logic
+    function openMapModal() {
+        document.getElementById('map-modal').style.display = 'block';
+        loadMap('fullnetwork');
+    }
+    function closeMapModal() {
+        document.getElementById('map-modal').style.display = 'none';
+    }
+
+    // Esc Key Listener
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") closeMapModal();
     });
 </script>
 
