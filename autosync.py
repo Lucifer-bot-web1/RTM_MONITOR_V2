@@ -13,77 +13,39 @@ class AutoGitHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if ".git" in event.src_path: return
         print(f"\n[DETECTED] Modified: {event.src_path}")
-        self.smart_sync()
+        self.force_push_to_github()
 
     def on_created(self, event):
         if ".git" in event.src_path: return
         print(f"\n[DETECTED] Created: {event.src_path}")
-        self.smart_sync()
+        self.force_push_to_github()
 
-    def run_command(self, command):
-        """Run shell command and return output/error code"""
+    def on_deleted(self, event):
+        if ".git" in event.src_path: return
+        print(f"\n[DETECTED] Deleted: {event.src_path}")
+        self.force_push_to_github()
+
+    def force_push_to_github(self):
+        print("🚀 Sending updates to GitHub...")
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-            if result.returncode != 0:
-                return False, result.stderr
-            return True, result.stdout
-        except Exception as e:
-            return False, str(e)
+            # 1. Add all changes (New, Modified, Deleted)
+            os.system("git add .")
 
-    def remove_lock_file(self):
-        """Fixes '.git/index.lock' error if git crashed previously"""
-        lock_file = os.path.join(REPO_PATH, ".git", "index.lock")
-        if os.path.exists(lock_file):
-            print("⚠️ Lock file found! Removing it to fix Git...")
-            try:
-                os.remove(lock_file)
-                print("✅ Lock file removed.")
-            except:
-                print("❌ Could not remove lock file.")
+            # 2. Commit
+            os.system('git commit -m "Auto-Update: Local is Master"')
 
-    def smart_sync(self):
-        print("🔄 Starting Smart Sync...")
+            # 3. FORCE PUSH (This overwrites GitHub with Local content)
+            # GitHub-ல் இருந்து எதையும் எடுக்காது. Local-ல் இருப்பதை திணிக்கும்.
+            result = subprocess.run(f"git push origin {BRANCH_NAME} --force", shell=True, capture_output=True,
+                                    text=True)
 
-        # 1. First, fix any lock files
-        self.remove_lock_file()
-
-        # 2. Add all changes
-        self.run_command("git add .")
-
-        # 3. Commit (Ignore if nothing to commit)
-        success, output = self.run_command('git commit -m "Auto Update: J.A.R.V.I.S Sync"')
-        if "nothing to commit" in output:
-            print("ℹ️ Nothing new to commit.")
-
-        # 4. Try Pushing
-        print("🚀 Attempting to Push...")
-        success, error = self.run_command(f"git push origin {BRANCH_NAME}")
-
-        if success:
-            print("✅ Push Successful!")
-        else:
-            # 5. AUTO CORRECT LOGIC (If Push Fails)
-            print("⚠️ Push Failed! (Likely Remote Changes). Attempting Auto-Fix...")
-            print(f"Error details: {error}")
-
-            # Step A: Pull changes from GitHub (Rebase to keep history clean)
-            print("⬇️ Pulling latest changes from GitHub...")
-            pull_success, pull_err = self.run_command(f"git pull origin {BRANCH_NAME} --rebase")
-
-            if pull_success:
-                print("✅ Pull Successful. Retrying Push...")
-                # Step B: Push again after Pull
-                retry_success, retry_err = self.run_command(f"git push origin {BRANCH_NAME}")
-                if retry_success:
-                    print("✅ Auto-Fix Successful! Synced with GitHub.")
-                else:
-                    print(f"❌ Auto-Fix Failed during retry push: {retry_err}")
+            if result.returncode == 0:
+                print("✅ Uploaded to GitHub Successfully!")
             else:
-                # If Pull fails, it might be a conflict or stash needed
-                print(f"❌ Auto-Fix Pull Failed: {pull_err}")
-                print("Trying Force Push (Last Resort)...")
-                # Optional: Uncomment below line if you want to FORCE overwrite GitHub (Dangerous)
-                # self.run_command(f"git push origin {BRANCH_NAME} --force")
+                print(f"⚠️ Push Error: {result.stderr}")
+
+        except Exception as e:
+            print(f"❌ Error: {e}")
 
 
 if __name__ == "__main__":
@@ -92,15 +54,16 @@ if __name__ == "__main__":
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
 
-    print(f"🤖 J.A.R.V.I.S Auto-Sync Module Active on: {os.path.abspath(path)}")
+    print(f"🤖 J.A.R.V.I.S One-Way Sync Active (Local -> GitHub)")
     print("---------------------------------------------------------")
-    print("Monitors file changes & Auto-corrects Git errors.")
+    print("⚠️  WARNING: This will OVERWRITE GitHub with your Local files.")
+    print("NO files will be downloaded from GitHub.")
     print("Press Ctrl+C to stop.")
 
     observer.start()
     try:
         while True:
-            time.sleep(2)
+            time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
