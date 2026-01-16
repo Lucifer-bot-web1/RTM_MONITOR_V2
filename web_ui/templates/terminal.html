@@ -1,8 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Terminal: {{ ip }}</h2>
-<div class="card" style="background:black; font-family:monospace; min-height:400px; color:#0f0;">
-    <div id="output">Connecting to {{ ip }}...</div>
+<h2 class="page-title">Secure Terminal</h2>
+<div class="card" style="background:#000; border:1px solid #333; min-height:500px; font-family:'Courier New', monospace; color:#0f0; padding:20px;">
+    <div id="output">
+        <p>JARVIS SSH Protocol Initiated...</p>
+        <p>Target: {{ ip }}</p>
+        <p>Connection established.</p>
+        <br>
+        <span style="color:white;">admin@{{ ip }}:~#</span> <span class="cursor">_</span>
+    </div>
 </div>
-<input type="text" style="width:100%; padding:10px; background:#111; color:white; border:none;" placeholder="Enter command...">
+<input type="text" style="width:100%; padding:15px; background:#111; color:white; border:none; border-top:1px solid #333; font-family:monospace;" placeholder="Enter command..." autofocus>
 {% endblock %}
