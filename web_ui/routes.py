@@ -151,6 +151,13 @@ def device_delete(dev_id):
     return redirect(url_for('main.devices'))
 
 
+# --- TERMINAL (THIS WAS MISSING!) ---
+@bp.route('/terminal')
+@login_required
+def terminal():
+    return render_template('terminal.html', ip="Select a Device")
+
+
 # --- SETTINGS ---
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
