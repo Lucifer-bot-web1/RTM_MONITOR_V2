@@ -38,7 +38,7 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="alert {{ category }}" style="padding:15px; margin-bottom:20px; border-radius:6px; background:rgba(0,0,0,0.3); border-left:4px solid var(--accent);">
+                        <div class="alert {{ category }}" style="padding:15px; margin-bottom:20px; border-radius:6px; background:rgba(0,0,0,0.3); border-left:4px solid var(--accent); color: white;">
                             <i class="fa-solid fa-info-circle"></i> {{ message }}
                         </div>
                     {% endfor %}
@@ -62,19 +62,19 @@
     </div>
 
     <script>
-        // GLOBAL HOTKEYS
+        // GLOBAL HOTKEYS (ESC Logic)
         document.addEventListener('keydown', function(event) {
             if (event.key === "Escape") {
-                // Logic: Close Logs -> Close Map -> Go Back
                 const logs = document.getElementById('log-overlay');
-                const mapModal = document.getElementById('map-modal'); // Defined in Dashboard
+                const mapModal = document.getElementById('map-modal');
 
                 if (logs && logs.style.display !== 'none') {
                     toggleLogs();
                 } else if (mapModal && mapModal.style.display !== 'none') {
-                    closeMapModal();
+                    if(typeof closeMapModal === 'function') closeMapModal();
                 } else {
-                    window.history.back();
+                    // Optional: Go back if nothing is open
+                    // window.history.back();
                 }
             }
         });
@@ -86,9 +86,7 @@
 
         // Connect Socket for Logs
         const socket = io();
-        socket.on('connect', () => { console.log("Socket Connected"); });
 
-        // Simulating logs based on events
         socket.on('device_update', (data) => {
             addLog(`[UPDATE] ${data.ip} is now ${data.state} (${data.rtt}ms)`);
         });
@@ -103,7 +101,7 @@
             line.innerText = `${new Date().toLocaleTimeString()} > ${msg}`;
             line.style.borderBottom = "1px solid #1e293b";
             line.style.padding = "4px 0";
-            box.prepend(line); // Add to top
+            box.prepend(line);
         }
     </script>
 </body>
