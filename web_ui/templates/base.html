@@ -7,15 +7,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 <body>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="brand-icon"><i class="fa-brands fa-hubspot"></i></div>
+            <div class="brand-icon" title="RTM Enterprise"><i class="fa-brands fa-hubspot"></i></div>
 
-            <nav style="width: 100%;">
+            <nav style="width: 100%; margin-top: 20px;">
                 <a href="{{ url_for('main.dashboard') }}" class="menu-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
                     <i class="fa-solid fa-chart-pie"></i> <span>Observability</span>
                 </a>
@@ -30,7 +31,7 @@
                 </a>
             </nav>
 
-            <div style="margin-top: auto; width: 100%;">
+            <div style="margin-top: auto; width: 100%; margin-bottom: 20px;">
                 <a href="{{ url_for('main.logout') }}" class="menu-item">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
                 </a>
@@ -39,18 +40,33 @@
 
         <div class="main-content">
             <div class="top-bar">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <i class="fa-solid fa-bars" style="color:var(--text-muted);"></i>
-                    <span style="font-weight: 500;">Network Observability</span>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <i class="fa-solid fa-bars" style="color:var(--text-muted); cursor:pointer;"></i>
+                    <span style="font-weight: 500; letter-spacing: 0.5px;">NETWORK OBSERVABILITY</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:15px; font-family: monospace;">
-                    <span style="color:var(--color-blue);">LIVE</span>
-                    <span>{{ now.strftime('%Y-%m-%d %H:%M') }}</span>
-                    <i class="fa-solid fa-user-circle" style="font-size:18px;"></i>
+                <div style="display:flex; align-items:center; gap:20px; font-family: 'Roboto Mono', monospace; font-size: 12px;">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <span style="height:8px; width:8px; background:#2ecc71; border-radius:50%;"></span>
+                        <span>SYSTEM LIVE</span>
+                    </div>
+                    <div style="color:var(--text-muted);">{{ now.strftime('%Y-%m-%d %H:%M') }}</div>
+                    <div style="height:30px; width:30px; background:#0984e3; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+                        A
+                    </div>
                 </div>
             </div>
 
             <div class="dashboard-scroll">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div style="padding: 10px 15px; margin-bottom: 15px; border-radius: 4px; font-size: 12px; color: white; background: {% if category=='success' %}#2ecc71{% elif category=='danger' %}#ff4d4d{% else %}#0984e3{% endif %};">
+                                <i class="fa-solid fa-info-circle"></i> {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
                 {% block content %}{% endblock %}
             </div>
         </div>
