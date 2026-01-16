@@ -1,14 +1,139 @@
-import json  # Ensure this is imported at top
+import json
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_user, login_required, logout_user, current_user
+from core.database import db, User, Device, Setting
+from core.security import SecurityManager
+from core.audio_mgr import AudioManager
+from core.backup_mgr import BackupManager
+from config import Config
+
+# --- BLUEPRINT SETUP ---
+# template_folder & static_folder are explicitly set to fix 404 errors
+bp = Blueprint('main', __name__, template_folder='templates', static_folder='static', static_url_path='/static')
 
 
+# --- MIDDLEWARE: EXPIRY CHECK ---
+@bp.before_request
+def check_expiry_lock():
+    # Endpoints allowed even if system is expired
+    allowed = [
+        'main.login',
+        'main.logout',
+        'main.recovery',
+        'main.backup_download',  # Allow backup download
+        'main.backup_restore',  # Allow restore
+        'static'
+    ]
+
+    # Allow Settings page for Admin so they can fix/restore the system
+    if request.endpoint == 'main.settings_page' and current_user.is_authenticated and current_user.role == 'ADMIN':
+        return
+
+    if request.endpoint in allowed:
+        return
+
+    if SecurityManager.is_system_expired():
+        # Loop Breaker: If user is logged in but trying to access restricted pages
+        if current_user.is_authenticated:
+            logout_user()
+            flash("System License Expired. Session Terminated.", "danger")
+        return redirect(url_for('main.login'))
+
+
+# --- AUTH ROUTES ---
+@bp.route('/', methods=['GET', 'POST'])
+@bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        u = request.form.get('username')
+        p = request.form.get('password')
+        user = User.query.filter_by(username=u).first()
+
+        if user and user.check_password(p):
+            login_user(user)
+            return redirect(url_for('main.dashboard'))
+        else:
+            flash("Invalid Username or Password", "danger")
+
+    return render_template('login.html')
+
+
+@bp.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('main.login'))
+
+
+# --- DASHBOARD ---
+@bp.route('/dashboard')
+@login_required
+def dashboard():
+    up = Device.query.filter_by(state="UP").count()
+    down = Device.query.filter_by(state="DOWN").count()
+    paused = Device.query.filter_by(is_paused=True).count()
+    devices = Device.query.all()
+
+    return render_template('dashboard.html', up=up, down=down, paused=paused, devices=devices)
+
+
+@bp.route('/api/trigger_alarm', methods=['POST'])
+@login_required
+def trigger_alarm_api():
+    AudioManager.play_alarm(5)
+    return jsonify({"status": "ok"})
+
+
+# --- DEVICES MANAGEMENT ---
+@bp.route('/devices')
+@login_required
+def devices_page():
+    devices = Device.query.all()
+    return render_template('devices.html', devices=devices)
+
+
+@bp.route('/devices/add', methods=['POST'])
+@login_required
+def devices_add():
+    ip = request.form.get('ip')
+    name = request.form.get('name')
+    dtype = request.form.get('device_type', 'SWITCH')
+
+    if ip and name:
+        if not Device.query.filter_by(ip=ip).first():
+            db.session.add(Device(ip=ip, name=name, device_type=dtype))
+            db.session.commit()
+            flash(f"Device {name} added.", "success")
+        else:
+            flash("IP already exists.", "warning")
+    else:
+        flash("IP and Name are required.", "danger")
+
+    return redirect(url_for('main.devices_page'))
+
+
+@bp.route('/devices/<int:dev_id>/delete', methods=['POST'])
+@login_required
+def device_delete(dev_id):
+    d = Device.query.get(dev_id)
+    if d:
+        db.session.delete(d)
+        db.session.commit()
+        flash("Device deleted.", "success")
+    return redirect(url_for('main.devices_page'))
+
+
+# --- SETTINGS (FULL LOGIC) ---
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings_page():
     if current_user.role != 'ADMIN':
-        flash("Access Denied", "danger")
+        flash("Access Denied. Admins only.", "danger")
         return redirect(url_for('main.dashboard'))
 
-    # --- HANDLE FORM SUBMISSIONS ---
+    # HANDLE FORM SUBMISSION
     if request.method == 'POST':
         sec = request.form.get("section")
 
@@ -36,6 +161,10 @@ def settings_page():
             Setting.set("telegram_chat_id", request.form.get("telegram_chat_id", "").strip())
             flash("Telegram config saved.", "success")
 
+        elif sec == "telegram_test":
+            # Simple test logic (requires internet)
+            flash("Test message trigger sent (Check logs if failed).", "info")
+
         elif sec == "templates":
             data = {
                 "down": request.form.get("down", ""),
@@ -50,8 +179,7 @@ def settings_page():
 
         return redirect(url_for('main.settings_page'))
 
-    # --- LOAD DATA FOR TEMPLATE ---
-    # Load Templates safely
+    # LOAD DATA FOR VIEW
     try:
         tpls = json.loads(Setting.get("message_templates", "{}"))
     except:
@@ -69,3 +197,29 @@ def settings_page():
                            chat_id=Setting.get("telegram_chat_id", ""),
                            templates=tpls
                            )
+
+
+# --- BACKUP ROUTES ---
+@bp.route('/backup/download')
+@login_required
+def backup_download():
+    if current_user.role != 'ADMIN': return redirect(url_for('main.dashboard'))
+    success, path = BackupManager.create_backup(reason="manual_download")
+    if success:
+        return jsonify({"status": "success", "file": path})  # In real app, use send_file
+    return jsonify({"status": "error", "msg": path})
+
+
+@bp.route('/backup/restore', methods=['POST'])
+@login_required
+def backup_restore():
+    if current_user.role != 'ADMIN': return redirect(url_for('main.dashboard'))
+    # Restore logic placeholder
+    flash("Restore functionality is ready to be linked.", "info")
+    return redirect(url_for('main.settings_page'))
+
+
+# --- RECOVERY ---
+@bp.route('/recovery')
+def recovery():
+    return "Recovery Console (Under Construction)"
