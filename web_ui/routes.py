@@ -1,94 +1,71 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_user, login_required, logout_user, current_user
-from core.database import db, User, Device
-from core.security import SecurityManager
-from core.audio_mgr import AudioManager
-from config import Config
-
-# FIX: Added static_folder to fix CSS 404
-bp = Blueprint('main', __name__, template_folder='templates', static_folder='static', static_url_path='/static')
+import json  # Ensure this is imported at top
 
 
-# --- MIDDLEWARE ---
-@bp.before_request
-def check_expiry_lock():
-    # Allow these endpoints always
-    allowed = ['main.login', 'main.logout', 'main.recovery', 'static']
-
-    if request.endpoint in allowed:
-        return
-
-    if SecurityManager.is_system_expired():
-        # FIX: If user is logged in but expired, log them out to prevent Loop
-        if current_user.is_authenticated:
-            logout_user()
-            flash("License Expired. Session Terminated.", "danger")
-        return redirect(url_for('main.login'))
-
-
-# --- ROUTES ---
-@bp.route('/', methods=['GET', 'POST'])
-@bp.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
+@bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings_page():
+    if current_user.role != 'ADMIN':
+        flash("Access Denied", "danger")
         return redirect(url_for('main.dashboard'))
 
+    # --- HANDLE FORM SUBMISSIONS ---
     if request.method == 'POST':
-        u = request.form.get('username')
-        p = request.form.get('password')
-        user = User.query.filter_by(username=u).first()
+        sec = request.form.get("section")
 
-        if user and user.check_password(p):
-            login_user(user)
-            return redirect(url_for('main.dashboard'))
-        else:
-            flash("Invalid Username or Password", "danger")
+        if sec == "theme":
+            st = request.form.get("theme_style")
+            Setting.set("theme_style", st)
+            flash("Theme updated.", "success")
 
-    return render_template('login.html')
+        elif sec == "time":
+            Setting.set("timezone", request.form.get("timezone", "Asia/Kolkata"))
+            Setting.set("time_format", request.form.get("time_format", "DD-MM-YYYY HH:mm:ss"))
+            flash("Time settings saved.", "success")
 
+        elif sec == "ping":
+            Setting.set("ping_timeout_sec", request.form.get("ping_timeout_sec", "30"))
+            Setting.set("up_success_threshold", request.form.get("up_success_threshold", "15"))
+            flash("Ping engine updated.", "success")
 
-@bp.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('main.login'))
+        elif sec == "alarm":
+            Setting.set("alarm_duration_sec", request.form.get("alarm_duration_sec", "10"))
+            flash("Alarm settings saved.", "success")
 
+        elif sec == "telegram":
+            Setting.set("telegram_token", request.form.get("telegram_token", "").strip())
+            Setting.set("telegram_chat_id", request.form.get("telegram_chat_id", "").strip())
+            flash("Telegram config saved.", "success")
 
-@bp.route('/dashboard')
-@login_required
-def dashboard():
-    up = Device.query.filter_by(state="UP").count()
-    down = Device.query.filter_by(state="DOWN").count()
-    devices = Device.query.all()
-    return render_template('dashboard.html', up=up, down=down, devices=devices)
+        elif sec == "templates":
+            data = {
+                "down": request.form.get("down", ""),
+                "up": request.form.get("up", ""),
+                "add": request.form.get("add", ""),
+                "pause": request.form.get("pause", ""),
+                "stop": request.form.get("stop", ""),
+                "delete": request.form.get("delete", ""),
+            }
+            Setting.set("message_templates", json.dumps(data))
+            flash("Templates updated.", "success")
 
+        return redirect(url_for('main.settings_page'))
 
-@bp.route('/api/trigger_alarm', methods=['POST'])
-def trigger_alarm_api():
-    AudioManager.play_alarm(5)
-    return jsonify({"status": "ok"})
+    # --- LOAD DATA FOR TEMPLATE ---
+    # Load Templates safely
+    try:
+        tpls = json.loads(Setting.get("message_templates", "{}"))
+    except:
+        tpls = {}
 
-
-# --- DEVICE ROUTES ---
-@bp.route('/devices')
-@login_required
-def devices_page():
-    devices = Device.query.all()
-    return render_template('devices.html', devices=devices)
-
-
-@bp.route('/devices/add', methods=['POST'])
-@login_required
-def devices_add():
-    ip = request.form.get('ip')
-    name = request.form.get('name')
-    if ip and name:
-        if not Device.query.filter_by(ip=ip).first():
-            db.session.add(Device(ip=ip, name=name))
-            db.session.commit()
-    return redirect(url_for('main.devices_page'))
-
-
-# --- RECOVERY ---
-@bp.route('/recovery')
-def recovery():
-    return "Recovery Console (Under Construction)"
+    return render_template('settings.html',
+                           themes=["dark_glass", "light_glass", "neon_blue", "cyber_3d"],
+                           current_theme=Setting.get("theme_style", "dark_glass"),
+                           tzname=Setting.get("timezone", "Asia/Kolkata"),
+                           fmt=Setting.get("time_format", "DD-MM-YYYY HH:mm:ss"),
+                           ping_timeout_sec=Setting.get("ping_timeout_sec", "30"),
+                           up_threshold=Setting.get("up_success_threshold", "15"),
+                           alarm_sec=Setting.get("alarm_duration_sec", "10"),
+                           token=Setting.get("telegram_token", ""),
+                           chat_id=Setting.get("telegram_chat_id", ""),
+                           templates=tpls
+                           )
