@@ -7,12 +7,10 @@ from core.security import SecurityManager
 from core.audio_mgr import AudioManager
 from core.backup_mgr import BackupManager
 
-# --- BLUEPRINT SETUP ---
-# Idhu romba mukkiyam: static_folder path correct-a irukanum
+# NOTE: static_folder setup is important for CSS to load
 bp = Blueprint('main', __name__, template_folder='templates', static_folder='static')
 
 
-# --- MIDDLEWARE: EXPIRY CHECK ---
 @bp.before_request
 def check_expiry_lock():
     allowed = ['main.login', 'main.logout', 'main.recovery', 'main.static']
@@ -31,7 +29,6 @@ def check_expiry_lock():
         return redirect(url_for('main.login'))
 
 
-# --- AUTH ROUTES ---
 @bp.route('/', methods=['GET', 'POST'])
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -58,27 +55,18 @@ def logout():
     return redirect(url_for('main.login'))
 
 
-# --- DASHBOARD ---
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    # Statistics
     up = Device.query.filter_by(state="UP").count()
     down = Device.query.filter_by(state="DOWN").count()
     paused = Device.query.filter_by(is_paused=True).count()
     devices = Device.query.all()
-
-    # UI requires 'now' for the clock
-    return render_template('dashboard.html',
-                           up=up,
-                           down=down,
-                           paused=paused,
-                           devices=devices,
-                           now=datetime.now())
+    # 'now' is needed for the dashboard clock
+    return render_template('dashboard.html', up=up, down=down, paused=paused, devices=devices, now=datetime.now())
 
 
 # --- DEVICES MANAGEMENT ---
-# FIX: Renamed from 'devices_page' to 'devices' to match HTML
 @bp.route('/devices')
 @login_required
 def devices():
@@ -117,16 +105,14 @@ def device_delete(dev_id):
     return redirect(url_for('main.devices'))
 
 
-# --- TERMINAL (ADDED THIS) ---
+# --- TERMINAL ---
 @bp.route('/terminal')
 @login_required
 def terminal():
-    # Placeholder for terminal page
     return render_template('terminal.html', ip="Select a Device")
 
 
 # --- SETTINGS ---
-# FIX: Renamed from 'settings_page' to 'settings'
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -135,11 +121,7 @@ def settings():
         return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
-        sec = request.form.get("section")
-
-        # ... (Existing logic for saving settings) ...
-        # (Shortened for brevity, keep your original logic here if needed)
-
+        # (Settings saving logic placeholder)
         flash("Settings updated (Demo Mode).", "success")
         return redirect(url_for('main.settings'))
 
@@ -163,6 +145,7 @@ def backup_download():
 @bp.route('/backup/restore', methods=['POST'])
 @login_required
 def backup_restore():
+    if current_user.role != 'ADMIN': return redirect(url_for('main.dashboard'))
     flash("Restore functionality is ready.", "info")
     return redirect(url_for('main.settings'))
 
@@ -173,3 +156,9 @@ def backup_restore():
 def trigger_alarm_api():
     AudioManager.play_alarm(5)
     return jsonify({"status": "ok"})
+
+
+# --- RECOVERY (THIS WAS MISSING!) ---
+@bp.route('/recovery')
+def recovery():
+    return "<h1>System Recovery Console</h1><p>Contact Administrator for access key.</p><a href='/login'>Back to Login</a>"
