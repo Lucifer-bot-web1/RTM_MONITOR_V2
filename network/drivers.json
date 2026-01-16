@@ -1,0 +1,23 @@
+{
+    "cisco_ios": {
+        "cmd_enter_config": "configure terminal",
+        "cmd_port_mode": "interface {port}",
+        "cmd_shutdown": "shutdown",
+        "cmd_no_shutdown": "no shutdown",
+        "cmd_save": "write memory"
+    },
+    "huawei": {
+        "cmd_enter_config": "system-view",
+        "cmd_port_mode": "interface {port}",
+        "cmd_shutdown": "shutdown",
+        "cmd_no_shutdown": "undo shutdown",
+        "cmd_save": "save"
+    },
+    "linux": {
+        "cmd_enter_config": "",
+        "cmd_port_mode": "",
+        "cmd_shutdown": "ifconfig {port} down",
+        "cmd_no_shutdown": "ifconfig {port} up",
+        "cmd_save": ""
+    }
+}

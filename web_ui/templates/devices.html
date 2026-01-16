@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Device Management</h2>
+
+<div class="card">
+    <h3>Add New Device</h3>
+    <form action="{{ url_for('main.devices_add') }}" method="POST" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <input type="text" name="ip" placeholder="IP Address" class="btn" style="background:rgba(255,255,255,0.05); cursor:text; text-align:left;" required>
+        <input type="text" name="name" placeholder="Device Name" class="btn" style="background:rgba(255,255,255,0.05); cursor:text; text-align:left;" required>
+        <select name="device_type" class="btn" style="background:rgba(255,255,255,0.05);">
+            <option value="cisco_ios">Cisco Switch</option>
+            <option value="huawei">Huawei OLT</option>
+            <option value="linux">Linux/Server</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Add Device</button>
+    </form>
+</div>
+
+{% endblock %}

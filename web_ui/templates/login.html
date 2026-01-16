@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Access | RTM Pro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Login Specific Overrides to Center the Box */
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: var(--text-main);
+            font-size: 1.8rem;
+            margin: 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .login-header p {
+            color: var(--accent);
+            font-size: 0.8rem;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box; /* Fixes padding width issue */
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8rem;
+        }
+
+        .footer-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .footer-link a:hover {
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="card" style="border-top: 4px solid var(--accent);">
+
+            <div class="login-header">
+                <h1>RTM PRO</h1>
+                <p>SECURE SYSTEM ACCESS</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div style="padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;
+                                    background: {{ 'rgba(239, 68, 68, 0.2)' if category == 'danger' else 'rgba(34, 197, 94, 0.2)' }};
+                                    color: {{ '#fca5a5' if category == 'danger' else '#86efac' }}; border: 1px solid rgba(255,255,255,0.1);">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('main.login') }}">
+                <div class="input-group">
+                    <label>IDENTITY</label>
+                    <input type="text" name="username" class="form-control" placeholder="Enter Username" required autofocus>
+                </div>
+
+                <div class="input-group">
+                    <label>KEY</label>
+                    <input type="password" name="password" class="form-control" placeholder="Enter Password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">
+                    INITIATE SESSION
+                </button>
+            </form>
+
+            <div class="footer-link">
+                <a href="{{ url_for('main.recovery') }}">System Locked? Access Recovery</a>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 15px; color: rgba(255,255,255,0.2); font-size: 0.7rem;">
+            RTM MONITOR V2.0 // DEVELOPED BY SUDHARSAN U
+        </div>
+    </div>
+
+</body>
+</html>

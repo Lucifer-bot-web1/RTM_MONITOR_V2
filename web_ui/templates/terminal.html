@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Terminal: {{ ip }}</h2>
+<div class="card" style="background:black; font-family:monospace; min-height:400px; color:#0f0;">
+    <div id="output">Connecting to {{ ip }}...</div>
+</div>
+<input type="text" style="width:100%; padding:10px; background:#111; color:white; border:none;" placeholder="Enter command...">
+{% endblock %}
