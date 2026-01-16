@@ -1,30 +1,41 @@
+import bcrypt
 from datetime import datetime, timezone
-from passlib.hash import bcrypt
 from core.database import User
 
 
 class SecurityManager:
     @staticmethod
-    def hash_password(password):
-        return bcrypt.hash(password)
+    def hash_password(plain_password):
+        return bcrypt.hashpw(plain_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     @staticmethod
     def verify_password(plain_password, hashed_password):
-        return bcrypt.verify(plain_password, hashed_password)
+        try:
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except ValueError:
+            return False
 
     @staticmethod
     def is_system_expired():
         """
-        Checks if the system is expired.
-        Logic: If NO active admin exists with a valid future expiry date -> Expired.
+        Checks if the system is valid.
+        Returns False if at least one Admin has a valid future date OR no expiry set.
         """
         admins = User.query.filter_by(role='ADMIN', active=True).all()
+
+        # If no admins exist yet (Fresh Install), allow access to create one
         if not admins:
-            return True  # No admins = Locked out/Expired
+            return False
 
         now = datetime.now(timezone.utc)
+
         for admin in admins:
-            if admin.expires_at and admin.expires_at.replace(tzinfo=timezone.utc) > now:
-                return False  # At least one valid license exists
+            # FIX: If expires_at is None, it means LIFETIME validity.
+            if admin.expires_at is None:
+                return False
+
+                # Check date
+            if admin.expires_at.replace(tzinfo=timezone.utc) > now:
+                return False
 
         return True  # All admins expired
