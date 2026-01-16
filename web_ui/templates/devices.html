@@ -1,102 +1,150 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="header">
-    <h1 class="page-title">Device Assets</h1>
-</div>
-
-<div style="display:grid; grid-template-columns: 1fr 2fr; gap: 20px;">
-
-    <div class="card">
-        <h3><i class="fa-solid fa-plus-circle"></i> Add Node</h3>
-
-        <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-            <button onclick="showTab('single')" class="btn" style="padding:5px 10px; font-size:12px;">Single</button>
-            <button onclick="showTab('scan')" class="btn" style="padding:5px 10px; font-size:12px; background:#475569;">Scanner</button>
-        </div>
-
-        <form id="form-single" action="{{ url_for('main.devices_add') }}" method="POST">
-            <input type="hidden" name="mode" value="single">
-
-            <label style="font-size:12px; color:#94a3b8;">Uplink (Parent)</label>
-            <select name="uplink_id" class="form-control" style="width:100%; padding:8px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;">
-                <option value="0">-- Root --</option>
-                {% for d in devices %}
-                <option value="{{ d.id }}">{{ d.name }}</option>
-                {% endfor %}
-            </select>
-
-            <input type="text" name="ip" placeholder="IP Address" style="width:100%; padding:10px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;" required>
-            <input type="text" name="name" placeholder="Device Name" style="width:100%; padding:10px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;" required>
-            <select name="device_type" style="width:100%; padding:10px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;">
-                <option value="SWITCH">Switch</option>
-                <option value="ROUTER">Router</option>
-                <option value="SERVER">Server</option>
-            </select>
-            <button type="submit" class="btn btn-primary" style="width:100%">Initialize</button>
-        </form>
-
-        <form id="form-scan" action="{{ url_for('main.devices_add') }}" method="POST" style="display:none;">
-            <input type="hidden" name="mode" value="scan">
-            <p style="font-size:12px; color:#94a3b8;">IP Range Scanner</p>
-
-            <label style="font-size:12px; color:#94a3b8;">Uplink</label>
-            <select name="uplink_id_scan" class="form-control" style="width:100%; padding:8px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #333;">
-                <option value="0">-- Root --</option>
-                {% for d in devices %}
-                <option value="{{ d.id }}">{{ d.name }}</option>
-                {% endfor %}
-            </select>
-
-            <div style="display:flex; gap:5px;">
-                <input type="text" name="subnet" placeholder="192.168.1." style="flex:2; padding:8px; background:#1e293b; color:white; border:1px solid #333;">
-                <input type="number" name="start_ip" placeholder="1" style="flex:1; padding:8px; background:#1e293b; color:white; border:1px solid #333;">
-                <input type="number" name="end_ip" placeholder="254" style="flex:1; padding:8px; background:#1e293b; color:white; border:1px solid #333;">
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px; background:#10b981;">Run Scan</button>
-        </form>
+<div class="panel" style="height: 100%;">
+    <div class="panel-header">
+        <span>Device Inventory Management</span>
+        <button onclick="openAddModal()" class="btn-action">
+            <i class="fa-solid fa-plus"></i> ADD DEVICE
+        </button>
     </div>
-
-    <div class="card" style="overflow-y:auto; max-height:600px;">
-        <h3><i class="fa-solid fa-list"></i> Inventory</h3>
-        <table class="data-table" style="width:100%; border-collapse:collapse;">
+    <div class="panel-body" style="padding:0;">
+        <table>
             <thead>
-                <tr style="background:rgba(255,255,255,0.05); text-align:left;">
-                    <th style="padding:10px;">Status</th>
-                    <th style="padding:10px;">Name</th>
-                    <th style="padding:10px;">IP</th>
-                    <th style="padding:10px;">Uplink</th>
-                    <th style="padding:10px;">Action</th>
+                <tr>
+                    <th>STATUS</th>
+                    <th>DEVICE NAME</th>
+                    <th>IP ADDRESS</th>
+                    <th>TYPE</th>
+                    <th>UPLINK</th>
+                    <th style="text-align:right;">ACTIONS</th>
                 </tr>
             </thead>
             <tbody>
-                {% for d in devices %}
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                    <td style="padding:10px;"><span class="badge {{ d.state.lower() }}">{{ d.state }}</span></td>
-                    <td style="padding:10px;">{{ d.name }}</td>
-                    <td style="padding:10px; color:var(--accent);">{{ d.ip }}</td>
-                    <td style="padding:10px;">{{ d.uplink.name if d.uplink else 'Root' }}</td>
-                    <td style="padding:10px;">
-                        <form action="{{ url_for('main.device_delete', dev_id=d.id) }}" method="POST">
-                            <button class="btn btn-danger" style="padding:2px 8px; font-size:0.7rem;">DEL</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
+                {% if devices %}
+                    {% for d in devices %}
+                    <tr>
+                        <td>
+                            {% if d.state == 'UP' %}
+                                <span class="badge" style="background:#2ecc71; color:black;">ONLINE</span>
+                            {% else %}
+                                <span class="badge" style="background:#ff4d4d; color:white;">OFFLINE</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-weight:500; color:white;">{{ d.name }}</td>
+                        <td style="font-family:monospace; color:var(--color-blue);">{{ d.ip }}</td>
+                        <td>{{ d.device_type }}</td>
+                        <td style="color:var(--text-muted);">{{ d.uplink.name if d.uplink else 'Root' }}</td>
+                        <td style="text-align:right;">
+                            <form action="{{ url_for('main.device_delete', dev_id=d.id) }}" method="POST" style="display:inline;">
+                                <button class="btn-icon danger"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No Devices Found. Click "Add Device" to start.</td></tr>
+                {% endif %}
             </tbody>
         </table>
     </div>
 </div>
 
+<div id="add-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9000; align-items:center; justify-content:center;">
+    <div class="panel" style="width:400px; background:var(--bg-panel); border:1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div class="panel-header">
+            <span>Add New Node</span>
+            <i class="fa-solid fa-xmark" onclick="closeAddModal()" style="cursor:pointer;"></i>
+        </div>
+        <div class="panel-body">
+            <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <button onclick="showTab('single')" class="btn-tab active">Single</button>
+                <button onclick="showTab('scan')" class="btn-tab">Scanner</button>
+            </div>
+
+            <form id="form-single" action="{{ url_for('main.devices_add') }}" method="POST">
+                <input type="hidden" name="mode" value="single">
+
+                <label>IP Address</label>
+                <input type="text" name="ip" class="form-control" placeholder="192.168.1.1" required>
+
+                <label>Device Name</label>
+                <input type="text" name="name" class="form-control" placeholder="Core-Switch" required>
+
+                <label>Type</label>
+                <select name="device_type" class="form-control">
+                    <option value="SWITCH">Switch</option>
+                    <option value="ROUTER">Router</option>
+                    <option value="OLT">OLT</option>
+                    <option value="SERVER">Server</option>
+                </select>
+
+                <label>Uplink (Parent)</label>
+                <select name="uplink_id" class="form-control">
+                    <option value="0">-- Root Node --</option>
+                    {% for d in devices %}
+                    <option value="{{ d.id }}">{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <button class="btn-primary full-width" style="margin-top:15px;">ADD DEVICE</button>
+            </form>
+
+            <form id="form-scan" action="{{ url_for('main.devices_add') }}" method="POST" style="display:none;">
+                <input type="hidden" name="mode" value="scan">
+
+                <label>Subnet</label>
+                <input type="text" name="subnet" class="form-control" placeholder="192.168.1." required>
+
+                <div style="display:flex; gap:10px;">
+                    <div><label>Start</label><input type="number" name="start_ip" class="form-control" value="1"></div>
+                    <div><label>End</label><input type="number" name="end_ip" class="form-control" value="254"></div>
+                </div>
+
+                <label>Uplink</label>
+                <select name="uplink_id_scan" class="form-control">
+                    <option value="0">-- Root Node --</option>
+                    {% for d in devices %}
+                    <option value="{{ d.id }}">{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <button class="btn-primary full-width" style="margin-top:15px;">START SCAN</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-action { background: var(--color-blue); color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+    .btn-icon { background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
+    .btn-icon.danger:hover { color: var(--color-crit); }
+    .badge { padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+
+    #add-modal { display: none; } /* Flex via JS */
+
+    .form-control { width: 100%; background: #0b0c0e; border: 1px solid var(--border); color: white; padding: 8px; margin-bottom: 10px; border-radius: 4px; }
+    .btn-primary { background: var(--color-blue); color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-tab { background: transparent; border: none; color: var(--text-muted); padding: 5px; cursor: pointer; border-bottom: 2px solid transparent; }
+    .btn-tab.active { color: var(--color-blue); border-bottom: 2px solid var(--color-blue); }
+    label { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+</style>
+
 <script>
+    function openAddModal() {
+        document.getElementById('add-modal').style.display = 'flex';
+    }
+    function closeAddModal() {
+        document.getElementById('add-modal').style.display = 'none';
+    }
     function showTab(tab) {
-        if(tab === 'single') {
-            document.getElementById('form-single').style.display = 'block';
-            document.getElementById('form-scan').style.display = 'none';
-        } else {
-            document.getElementById('form-single').style.display = 'none';
-            document.getElementById('form-scan').style.display = 'block';
-        }
+        document.getElementById('form-single').style.display = tab === 'single' ? 'block' : 'none';
+        document.getElementById('form-scan').style.display = tab === 'scan' ? 'block' : 'none';
+
+        // Simple active class toggle logic for demo
+        const tabs = document.querySelectorAll('.btn-tab');
+        tabs[0].classList.toggle('active', tab === 'single');
+        tabs[1].classList.toggle('active', tab === 'scan');
     }
 </script>
 {% endblock %}
