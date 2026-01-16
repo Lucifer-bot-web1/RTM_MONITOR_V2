@@ -4,35 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RTM Monitor Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <h2 style="color:var(--accent);">RTM Pro</h2>
-            <nav>
-                <a href="{{ url_for('main.dashboard') }}" class="btn" style="width:100%; text-align:left; background:transparent;">Dashboard</a>
-                <a href="{{ url_for('main.devices_page') }}" class="btn" style="width:100%; text-align:left; background:transparent;">Devices</a>
-                <a href="{{ url_for('main.settings_page') }}" class="btn" style="width:100%; text-align:left; background:transparent;">Settings</a>
-            </nav>
-            <div style="margin-top:auto;">
-                <a href="{{ url_for('main.logout') }}" class="btn btn-danger" style="width:100%;">Logout</a>
-            </div>
-        </aside>
+    {% if current_user.is_authenticated %}
+    <nav class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-network-wired"></i> RTM Pro
+        </div>
 
-        <main class="main-content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="card" style="border-left: 4px solid var(--{{category}});">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+        <a href="{{ url_for('main.dashboard') }}" class="menu-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-chart-line"></i> Dashboard
+        </a>
+        <a href="{{ url_for('main.devices') }}" class="menu-item {% if request.endpoint == 'main.devices' %}active{% endif %}">
+            <i class="fa-solid fa-server"></i> Devices
+        </a>
+        <a href="{{ url_for('main.terminal') }}" class="menu-item {% if request.endpoint == 'main.terminal' %}active{% endif %}">
+            <i class="fa-solid fa-terminal"></i> Terminal
+        </a>
+        <a href="{{ url_for('main.settings') }}" class="menu-item {% if request.endpoint == 'main.settings' %}active{% endif %}">
+            <i class="fa-solid fa-gear"></i> Settings
+        </a>
 
-            {% block content %}{% endblock %}
-        </main>
-    </div>
+        <div class="menu-footer">
+            <a href="{{ url_for('main.logout') }}" class="menu-item">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
