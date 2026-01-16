@@ -9,7 +9,13 @@ from config import Config
 
 # --- BLUEPRINT SETUP ---
 # template_folder & static_folder are explicitly set to fix 404 errors
-bp = Blueprint('main', __name__, template_folder='templates', static_folder='static', static_url_path='/static')
+@bp.route('/settings')
+@login_required
+def settings_page():
+    # அட்மின் மட்டும் அனுமதிக்கும் லாஜிக்
+    if current_user.role != 'ADMIN':
+        return redirect(url_for('main.dashboard'))
+    return render_template('settings.html')
 
 
 # --- MIDDLEWARE: EXPIRY CHECK ---
