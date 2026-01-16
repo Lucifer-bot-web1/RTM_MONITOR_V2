@@ -1,10 +1,148 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="header">
+    <div class="brand">
+        <div class="title">System Settings</div>
+        <div class="subtitle">Configuration & Control Panel</div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="panel" style="background: {{ 'rgba(239, 68, 68, 0.2)' if category == 'danger' else 'rgba(34, 197, 94, 0.2)' }}; border: 1px solid {{ '#fca5a5' if category == 'danger' else '#86efac' }}; color: {{ '#fca5a5' if category == 'danger' else '#86efac' }}; padding: 10px; margin-bottom: 20px;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="panel">
+    <h4>Theme Style (Global)</h4>
+    <form method="post">
+        <input type="hidden" name="section" value="theme">
+        <select class="input" name="theme_style" style="background: rgba(0,0,0,0.3);">
+            {% for t in themes %}
+                <option value="{{ t }}" {% if t == current_theme %}selected{% endif %}>{{ t|replace('_', ' ')|title }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-primary" style="margin-top:10px;">Apply Theme</button>
+    </form>
+</div>
+
+<div class="cardrow" style="grid-template-columns: 1fr 1fr;">
+    
+    <div class="panel">
+        <h4>Time / Timezone</h4>
+        <form method="post">
+            <input type="hidden" name="section" value="time">
+            <label style="color:var(--text-muted); font-size:0.9rem;">Timezone</label>
+            <input class="input" name="timezone" value="{{ tzname }}" placeholder="Asia/Kolkata">
+            
+            <label style="color:var(--text-muted); font-size:0.9rem; margin-top:10px; display:block;">Time Format</label>
+            <input class="input" name="time_format" value="{{ fmt }}" placeholder="DD-MM-YYYY HH:mm:ss">
+            
+            <button class="btn" style="margin-top:15px;">Save Time Settings</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h4>Ping Engine</h4>
+        <form method="post">
+            <input type="hidden" name="section" value="ping">
+            <label style="color:var(--text-muted); font-size:0.9rem;">Ping Interval (Seconds)</label>
+            <input class="input" name="ping_timeout_sec" value="{{ ping_timeout_sec }}">
+            
+            <label style="color:var(--text-muted); font-size:0.9rem; margin-top:10px; display:block;">UP Success Threshold</label>
+            <input class="input" name="up_success_threshold" value="{{ up_threshold }}">
+            
+            <button class="btn" style="margin-top:15px;">Update Engine</button>
+        </form>
+    </div>
+</div>
+
+<div class="cardrow" style="grid-template-columns: 1fr 1fr;">
+    
+    <div class="panel">
+        <h4>Alarm Sound</h4>
+        <form method="post">
+            <input type="hidden" name="section" value="alarm">
+            <label style="color:var(--text-muted); font-size:0.9rem;">Alarm Duration (Seconds)</label>
+            <input class="input" name="alarm_duration_sec" value="{{ alarm_sec }}">
+            <button class="btn" style="margin-top:15px;">Save Alarm</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h4>Telegram Alerts</h4>
+        <form method="post" style="margin-bottom:10px;">
+            <input type="hidden" name="section" value="telegram">
+            <label style="color:var(--text-muted); font-size:0.9rem;">Bot Token</label>
+            <input class="input" name="telegram_token" value="{{ token }}">
+            
+            <label style="color:var(--text-muted); font-size:0.9rem; margin-top:10px; display:block;">Chat ID</label>
+            <input class="input" name="telegram_chat_id" value="{{ chat_id }}">
+            
+            <button class="btn" style="margin-top:15px;">Save Config</button>
+        </form>
+        <form method="post">
+            <input type="hidden" name="section" value="telegram_test">
+            <button class="btn btn-warn">Send Test Message</button>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <h4>Alert Message Templates</h4>
+    <form method="post">
+        <input type="hidden" name="section" value="templates">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:15px;">
+            <div>
+                <label style="color:#ef4444;">Link DOWN Message</label>
+                <textarea class="input" name="down" rows="2">{{ templates.down }}</textarea>
+            </div>
+            <div>
+                <label style="color:#22c55e;">Link UP Message</label>
+                <textarea class="input" name="up" rows="2">{{ templates.up }}</textarea>
+            </div>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-bottom:15px;">
+            <div><label>Device Added</label><textarea class="input" name="add" rows="2">{{ templates.add }}</textarea></div>
+            <div><label>Device Paused</label><textarea class="input" name="pause" rows="2">{{ templates.pause }}</textarea></div>
+            <div><label>Device Stopped</label><textarea class="input" name="stop" rows="2">{{ templates.stop }}</textarea></div>
+        </div>
+        
+        <div><label>Device Deleted</label><textarea class="input" name="delete" rows="2">{{ templates.delete }}</textarea></div>
+        
+        <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);">
+            Available Variables: <code>{ip}</code>, <code>{name}</code>, <code>{description}</code>
+        </div>
+        <button class="btn" style="margin-top:15px;">Save Templates</button>
+    </form>
+</div>
+
+<div class="panel" style="border-top: 4px solid var(--accent);">
+    <h4>Database Management</h4>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <p style="color:var(--text-muted); margin:0;">Download a full backup of your devices and settings.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <a href="{{ url_for('main.backup_download') }}" class="btn btn-primary">Download Backup (.zip)</a>
+        </div>
+    </div>
+    
+    <hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;">
+    
+    <form method="post" action="{{ url_for('main.backup_restore') }}" enctype="multipart/form-data" style="display:flex; align-items:center; gap:10px;">
+        <div style="flex:1;">
+            <label style="display:block; margin-bottom:5px;">Restore Backup</label>
+            <input type="file" name="file" accept=".zip" class="input">
+        </div>
+        <button class="btn btn-danger" onclick="return confirm('WARNING: This will overwrite current data. Continue?')">Upload & Restore</button>
+    </form>
+</div>
+{% endblock %}
