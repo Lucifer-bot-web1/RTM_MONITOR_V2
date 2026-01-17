@@ -2,256 +2,250 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RTM Enterprise | Identity Portal</title>
+    <title>RTM Enterprise | Core Access</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* --- CORE LAYOUT --- */
+        /* --- LAYOUT & BACKGROUND --- */
         body, html {
             height: 100%;
             margin: 0;
             overflow: hidden;
-            background-color: #050505; /* Deepest Black */
+            background-color: #020202; /* Fiber Core Black */
             font-family: 'Roboto', sans-serif;
         }
 
-        /* BACKGROUND ANIMATION LAYER */
-        #particles-js {
+        #fiber-network {
             position: absolute;
             width: 100%;
             height: 100%;
-            background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
             z-index: 1;
+            /* Subtle grid to represent Geo-Map */
+            background-image:
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
         }
 
-        /* --- LOGIN CARD (Glass + Hexagon Theme) --- */
+        /* --- LOGIN TOWER CARD --- */
         .login-wrapper {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            width: 380px;
-            padding: 2px; /* For Gradient Border */
-            background: linear-gradient(135deg, #0984e3, #2ecc71); /* Gradient Border */
-            border-radius: 6px;
-            box-shadow: 0 0 50px rgba(9, 132, 227, 0.15);
-        }
-
-        .login-box {
-            background: #0b0c0e; /* Inner Black */
-            padding: 40px;
-            border-radius: 4px;
+            width: 360px;
+            background: rgba(10, 15, 20, 0.85); /* Dark Glass */
+            border: 1px solid rgba(0, 255, 242, 0.2); /* Cyan Border */
+            border-bottom: 4px solid #00fff2; /* Fiber Cyan Accent */
+            box-shadow: 0 0 60px rgba(0, 255, 242, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
             text-align: center;
+            padding: 40px 30px;
+        }
+
+        /* --- TOWER SIGNAL ANIMATION --- */
+        .signal-tower {
             position: relative;
-            overflow: hidden;
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Top Accent Line */
-        .login-box::before {
-            content: '';
+        .tower-icon {
+            font-size: 30px;
+            color: #00fff2;
+            z-index: 2;
+        }
+
+        /* Pulsing Rings (Signal Waves) */
+        .signal-ring {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, #0984e3, transparent);
+            width: 100%;
+            height: 100%;
+            border: 2px solid #00fff2;
+            border-radius: 50%;
+            opacity: 0;
+            animation: pulse-signal 2s infinite ease-out;
+        }
+        .signal-ring:nth-child(2) { animation-delay: 0.5s; }
+        .signal-ring:nth-child(3) { animation-delay: 1s; }
+
+        @keyframes pulse-signal {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
         }
 
-        /* LOGO / TITLE */
-        .brand-icon {
-            font-size: 40px;
-            background: -webkit-linear-gradient(#0984e3, #2ecc71);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-
+        /* --- TEXT STYLES --- */
         .title {
             color: white;
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 22px;
+            font-weight: 800;
             letter-spacing: 1px;
-            margin-bottom: 5px;
+            margin: 0;
         }
-
         .subtitle {
-            color: #636e72;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 30px;
-        }
-
-        /* FORM INPUTS */
-        .input-group {
-            position: relative;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .input-label {
-            color: #0984e3;
+            color: #00fff2; /* Cyan Text */
             font-size: 10px;
             font-weight: bold;
-            margin-bottom: 5px;
-            display: block;
             text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(0, 255, 242, 0.5);
+        }
+
+        /* --- FORM ELEMENTS --- */
+        .input-group { position: relative; margin-bottom: 20px; text-align: left; }
+
+        .input-label {
+            color: #888; font-size: 9px; font-weight: bold; margin-bottom: 6px; display: block;
         }
 
         .form-control {
             width: 100%;
             padding: 12px 15px;
-            background: #15171b;
-            border: 1px solid #2d3436;
-            color: white;
+            background: #05070a;
+            border: 1px solid #333;
+            color: #00fff2; /* Hacker Style Input */
             font-family: 'Courier New', monospace;
             font-size: 14px;
             border-radius: 4px;
             transition: 0.3s;
             outline: none;
         }
-
         .form-control:focus {
-            border-color: #0984e3;
-            background: #1a1d21;
-            box-shadow: 0 0 10px rgba(9, 132, 227, 0.1);
+            border-color: #00fff2;
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.1);
         }
 
-        /* BUTTON */
-        .btn-login {
+        .btn-connect {
             width: 100%;
             padding: 12px;
-            margin-top: 10px;
-            background: linear-gradient(90deg, #0984e3, #0077c2);
-            color: white;
-            border: none;
+            background: rgba(0, 255, 242, 0.1);
+            color: #00fff2;
+            border: 1px solid #00fff2;
             font-weight: bold;
             font-size: 12px;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             border-radius: 4px;
             cursor: pointer;
             transition: 0.3s;
             text-transform: uppercase;
+            margin-top: 10px;
+        }
+        .btn-connect:hover {
+            background: #00fff2;
+            color: black;
+            box-shadow: 0 0 20px #00fff2;
         }
 
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(9, 132, 227, 0.3);
-        }
-
-        /* ALERTS */
+        /* --- ALERTS & FOOTER --- */
         .alert {
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 10px; padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: left; border-left: 3px solid;
         }
-        .alert-danger { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
-        .alert-success { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
-        .alert-warning { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; color: #f1c40f; }
+        .alert-danger { background: rgba(255,0,0,0.1); border-color: #ff4d4d; color: #ff4d4d; }
+        .alert-success { background: rgba(0,255,0,0.1); border-color: #2ecc71; color: #2ecc71; }
 
-        /* FOOTER */
-        .sys-info {
+        .footer {
             margin-top: 25px;
-            font-size: 9px;
-            color: #444;
-            border-top: 1px solid #2d3436;
+            border-top: 1px solid #222;
             padding-top: 15px;
+            font-size: 9px;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
         }
     </style>
 </head>
 <body>
 
-    <div id="particles-js"></div>
+    <div id="fiber-network"></div>
 
     <div class="login-wrapper">
-        <div class="login-box">
 
-            <div class="brand-icon"><i class="fa-brands fa-hubspot"></i></div>
-            <div class="title">RTM ENTERPRISE</div>
-            <div class="subtitle">Network Operations Center</div>
+        <div class="signal-tower">
+            <div class="signal-ring"></div>
+            <div class="signal-ring"></div>
+            <div class="signal-ring"></div>
+            <i class="fa-solid fa-tower-broadcast tower-icon"></i>
+        </div>
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span>{{ message }}</span>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+        <div class="title">CORE CONNECT</div>
+        <div class="subtitle">Fiber Transmission System</div>
 
-            <form method="POST">
-                <div class="input-group">
-                    <label class="input-label">Identity</label>
-                    <input type="text" name="username" class="form-control" placeholder="ENTER USERNAME" autocomplete="off" required>
-                </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-                <div class="input-group">
-                    <label class="input-label">Access Key</label>
-                    <input type="password" name="password" class="form-control" placeholder="ENTER PASSWORD" required>
-                </div>
-
-                <button type="submit" class="btn-login">
-                    Initialize Session <i class="fa-solid fa-arrow-right" style="margin-left:5px;"></i>
-                </button>
-            </form>
-
-            <div class="sys-info">
-                SYSTEM ID: <span style="color:#0984e3; font-family:monospace;">SECURE-NODE-01</span><br>
-                ENCRYPTION: AES-256 / HW-LOCKED
+        <form method="POST">
+            <div class="input-group">
+                <label class="input-label">NODE IDENTITY</label>
+                <input type="text" name="username" class="form-control" placeholder="USER-ID" required autocomplete="off">
             </div>
+
+            <div class="input-group">
+                <label class="input-label">SECURE KEY</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-connect">
+                <i class="fa-solid fa-bolt"></i> ESTABLISH LINK
+            </button>
+        </form>
+
+        <div class="footer">
+            <span>STATUS: <span style="color:#2ecc71;">ONLINE</span></span>
+            <span>DATA CENTER: CHN-01</span>
         </div>
     </div>
 
     <script>
-        particlesJS("particles-js", {
+        particlesJS("fiber-network", {
             "particles": {
-                "number": { "value": 60, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#0984e3" }, /* Enterprise Blue Hexagons */
-                "shape": {
-                    "type": "polygon",
-                    "stroke": { "width": 0, "color": "#000" },
-                    "polygon": { "nb_sides": 6 } /* HEXAGON SHAPE */
-                },
-                "opacity": { "value": 0.3, "random": true },
-                "size": { "value": 4, "random": false },
+                "number": { "value": 100, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#00fff2" }, /* Cyan Data Packets */
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.8, "random": true },
+                "size": { "value": 2, "random": false },
                 "line_linked": {
                     "enable": true,
-                    "distance": 150,
-                    "color": "#0984e3",
-                    "opacity": 0.2,
+                    "distance": 200, /* Long Cables */
+                    "color": "#00fff2", /* Cyan Cables */
+                    "opacity": 0.3,
                     "width": 1
                 },
                 "move": {
                     "enable": true,
-                    "speed": 1.5,
-                    "direction": "none",
+                    "speed": 8, /* HIGH SPEED (Fiber) */
+                    "direction": "right", /* Flowing Direction */
                     "random": false,
-                    "straight": false,
+                    "straight": true, /* Straight Lines like Cables */
                     "out_mode": "out",
-                    "bounce": false,
+                    "bounce": false
                 }
             },
             "interactivity": {
                 "detect_on": "canvas",
                 "events": {
-                    "onhover": { "enable": true, "mode": "grab" }, /* Magnetic Connection */
+                    "onhover": { "enable": false }, /* No mouse disturb, purely flow */
                     "onclick": { "enable": true, "mode": "push" },
                     "resize": true
-                },
-                "modes": {
-                    "grab": { "distance": 180, "line_linked": { "opacity": 0.8 } },
-                    "push": { "particles_nb": 4 }
                 }
             },
             "retina_detect": true
         });
     </script>
-
 </body>
 </html>
