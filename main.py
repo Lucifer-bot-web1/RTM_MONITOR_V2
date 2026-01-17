@@ -15,7 +15,6 @@ from web_ui.routes import bp as main_bp
 
 
 def create_app():
-    # LAN Mode Enabled: static files from web_ui
     app = Flask(__name__, static_folder='web_ui/static', static_url_path='/static')
     app.config.from_object(Config)
     db.init_app(app)
@@ -37,46 +36,49 @@ if __name__ == '__main__':
     socketio = SocketIO(app, async_mode="threading")
 
     with app.app_context():
-        # 1. DATABASE INIT
         db.create_all()
 
-        # 2. ADMIN & LICENSE GENERATION (First Run Logic)
-        admin = User.query.filter_by(username='admin').first()
+        # --- SUBSCRIPTION ACTIVATION LOGIC ---
+        # Check if 'superadmin' exists. If not, this is a NEW INSTALL.
+        admin = User.query.filter_by(username='superadmin').first()
+
         if not admin:
-            print(">>> INITIAL SETUP: Creating Master Admin & License...")
+            print("\n>>> 🟢 NEW SUBSCRIPTION DETECTED. ACTIVATING...")
 
-            # Step A: Set Expiry (30 Days Trial)
-            expiry_date = datetime.now() + timedelta(days=30)
-
-            # Step B: Get Hardware ID of this Server
+            # 1. Lock to THIS Computer
             hw_id = SecurityManager.get_system_id()
+            print(f">>> 🔒 Hardware Fingerprint: {hw_id}")
 
-            # Step C: Create Digital Seal
+            # 2. Set Expiry (e.g., 30 Days Trial or 1 Year)
+            expiry_date = datetime.now() + timedelta(days=365)
+
+            # 3. Generate Tamper-Proof Seal
             seal = SecurityManager.generate_license_hash(expiry_date.strftime('%Y-%m-%d'), hw_id)
 
+            # 4. Create Master User
             new_admin = User(
-                username='admin',
+                username='superadmin',
                 role='ADMIN',
                 expires_at=expiry_date,
                 license_hash=seal
             )
-            new_admin.set_password('admin123')
+            new_admin.set_password('Tech@admin')  # Default Master Password
 
             db.session.add(new_admin)
             db.session.commit()
-            print(f">>> SECURITY: System Locked to HW-ID: {hw_id}")
-            print(f">>> LICENSE: Valid until {expiry_date}")
-            print(">>> LOGIN: admin / admin123")
+            print(f">>> ✅ LICENSE ACTIVATED for 'superadmin'. Valid until {expiry_date.strftime('%Y-%m-%d')}")
+        else:
+            print(">>> 🔵 SYSTEM LOADED: Valid Subscription Found.")
 
-    # 3. START PING ENGINE
+    # Start Ping Engine
     pinger = PingWorker(app, socketio)
     pinger.start()
 
 
-    # 4. RUN SERVER (LAN ACCESS ENABLED)
+    # Run Server (LAN Mode)
     def run_server():
-        # host='0.0.0.0' allows other PCs in the network to connect
-        print(">>> RTM ENTERPRISE LIVE on http://0.0.0.0:5050")
+        # Using 0.0.0.0 allows LAN access (Web Connect)
+        print(">>> 🌐 RTM SERVER STARTED on PORT 5050")
         socketio.run(app, host='0.0.0.0', port=5050, debug=False, use_reloader=False)
 
 
@@ -85,7 +87,7 @@ if __name__ == '__main__':
 
     time.sleep(1)
 
-    # 5. LAUNCH APP WINDOW (Server Side)
+    # Open App Window (Server Side)
     webview.create_window(
         title="RTM Enterprise Server",
         url="http://127.0.0.1:5050",
