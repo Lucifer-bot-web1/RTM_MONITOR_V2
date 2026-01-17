@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, login_required, logout_user, current_user
 from core.database import db, User, Device
@@ -14,7 +14,7 @@ def inject_now():
     return {'now': datetime.now()}
 
 
-# --- MIDDLEWARE: SUPERADMIN LOCK ---
+# --- MIDDLEWARE ---
 @bp.before_request
 def check_access():
     allowed = ['main.login', 'main.logout', 'static']
@@ -22,16 +22,14 @@ def check_access():
     if request.endpoint in allowed: return
 
     if current_user.is_authenticated:
-        # 1. SUPERADMIN LOCK: Can ONLY access /setup
+        # SUPERADMIN LOCK
         if current_user.username == 'superadmin':
             if request.endpoint != 'main.setup':
                 return redirect(url_for('main.setup'))
-
-        # 2. NORMAL USER LOCK: Cannot access /setup
+        # NORMAL USER LOCK
         elif request.endpoint == 'main.setup':
             return redirect(url_for('main.dashboard'))
-
-        # 3. LICENSE CHECK (For Normal Users)
+        # LICENSE CHECK
         else:
             is_valid, msg = SecurityManager.verify_license(current_user)
             if not is_valid:
@@ -52,17 +50,19 @@ def login():
     if request.method == 'POST':
         u = request.form.get('username')
         p = request.form.get('password')
-
         user = User.query.filter_by(username=u).first()
 
         if user:
+            # CHECK BLOCK STATUS
+            if not user.active and user.username != 'superadmin':
+                flash("🚫 ACCOUNT BLOCKED. Contact Administrator.", "danger")
+                return render_template('login.html')
+
             if user.check_password(p):
-                # SUPERADMIN LOGIC
                 if user.username == 'superadmin':
                     login_user(user)
                     return redirect(url_for('main.setup'))
 
-                # NORMAL USER LOGIC
                 valid, msg = SecurityManager.verify_license(user)
                 if valid:
                     login_user(user)
@@ -83,48 +83,82 @@ def logout():
     return redirect(url_for('main.login'))
 
 
-# --- SETUP WIZARD (Superadmin Only) ---
+# --- SETUP WIZARD (Superadmin Control Panel) ---
 @bp.route('/setup', methods=['GET', 'POST'])
 @login_required
 def setup():
-    # Double check security
     if current_user.username != 'superadmin':
         return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
-        u_name = request.form.get('username')
-        u_pass = request.form.get('password')
-        duration = int(request.form.get('duration', 30))
+        action = request.form.get('action')
 
-        if User.query.filter_by(username=u_name).first():
-            flash("User already exists.", "warning")
-        else:
-            # CREATE CLIENT USER
-            from datetime import timedelta
-            expiry = datetime.now() + timedelta(days=duration)
-            hw_id = SecurityManager.get_system_id()
-            seal = SecurityManager.generate_license_hash(expiry.strftime('%Y-%m-%d'), hw_id)
+        # --- 1. CREATE USER ---
+        if action == 'create':
+            u_name = request.form.get('username')
+            u_pass = request.form.get('password')
+            duration_val = request.form.get('duration')
 
-            new_user = User(
-                username=u_name,
-                role='ADMIN',
-                expires_at=expiry,
-                license_hash=seal
-            )
-            new_user.set_password(u_pass)
-            db.session.add(new_user)
-            db.session.commit()
+            if User.query.filter_by(username=u_name).first():
+                flash("User already exists.", "warning")
+            else:
+                # Handle Duration (Days vs Minutes for Testing)
+                if duration_val == 'test_5m':
+                    expiry = datetime.now() + timedelta(minutes=5)
+                else:
+                    expiry = datetime.now() + timedelta(days=int(duration_val))
 
-            flash(f"✅ User '{u_name}' Created! Please Login.", "success")
-            logout_user()  # Kick superadmin out
-            return redirect(url_for('main.login'))
+                hw_id = SecurityManager.get_system_id()
+                seal = SecurityManager.generate_license_hash(expiry.strftime('%Y-%m-%d'), hw_id)
 
-    # Show existing users list for reference
+                new_user = User(username=u_name, role='ADMIN', expires_at=expiry, license_hash=seal, active=True)
+                new_user.set_password(u_pass)
+                db.session.add(new_user)
+                db.session.commit()
+                flash(f"✅ User '{u_name}' Created!", "success")
+
+        # --- 2. RENEW LICENSE (Extend 1 Year) ---
+        elif action == 'renew':
+            user_id = request.form.get('user_id')
+            user = User.query.get(user_id)
+            if user:
+                # Extend by 365 Days from TODAY
+                new_expiry = datetime.now() + timedelta(days=365)
+                hw_id = SecurityManager.get_system_id()
+                new_seal = SecurityManager.generate_license_hash(new_expiry.strftime('%Y-%m-%d'), hw_id)
+
+                user.expires_at = new_expiry
+                user.license_hash = new_seal
+                user.active = True  # Unblock if blocked
+                db.session.commit()
+                flash(f"🔄 License Renewed for {user.username} (+1 Year)", "success")
+
+        # --- 3. BLOCK / UNBLOCK ---
+        elif action == 'toggle_block':
+            user_id = request.form.get('user_id')
+            user = User.query.get(user_id)
+            if user:
+                user.active = not user.active
+                db.session.commit()
+                status = "Unblocked" if user.active else "Blocked"
+                flash(f"User {user.username} is now {status}", "info")
+
+        # --- 4. DELETE USER ---
+        elif action == 'delete':
+            user_id = request.form.get('user_id')
+            user = User.query.get(user_id)
+            if user:
+                db.session.delete(user)
+                db.session.commit()
+                flash(f"🗑️ User {user.username} Deleted.", "warning")
+
+    # List all users except superadmin
     users = User.query.filter(User.username != 'superadmin').all()
     return render_template('setup.html', users=users)
 
 
-# --- DASHBOARD & OTHERS (Keep existing code) ---
+# ... (Keep existing dashboard, api, devices routes as they are) ...
+# --- DASHBOARD & OTHERS (Existing Code Below) ---
 @bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -135,9 +169,6 @@ def dashboard():
     return render_template('dashboard.html', up=up, down=down, total=total, devices=devices)
 
 
-# ... (Paste the rest of your routes: api_topology, devices, terminal, settings) ...
-# (The rest of the file remains exactly the same as I gave you before)
-# ...
 @bp.route('/api/topology')
 @login_required
 def api_topology():
