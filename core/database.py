@@ -1,12 +1,12 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime, timezone
+from datetime import datetime
 import bcrypt
 
 db = SQLAlchemy()
 
 
-# --- 1. SETTING MODEL ---
+# --- SETTINGS TABLE ---
 class Setting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(64), unique=True, nullable=False)
@@ -34,15 +34,18 @@ class Setting(db.Model):
             db.session.rollback()
 
 
-# --- 2. USER MODEL ---
+# --- USER TABLE (UPDATED) ---
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(16), default="ADMIN")
-    expires_at = db.Column(db.DateTime)
+
+    # --- NEW LICENSE FIELDS ---
+    expires_at = db.Column(db.DateTime)  # License Expiry Date
+    license_hash = db.Column(db.String(128))  # The Digital Lock (Seal)
+
     active = db.Column(db.Boolean, default=True)
-    contact_info = db.Column(db.Text)
 
     def set_password(self, pw):
         self.password_hash = bcrypt.hashpw(pw.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -53,36 +56,15 @@ class User(db.Model, UserMixin):
         except:
             return False
 
-    def is_expired(self):
-        if not self.expires_at: return False
-        return datetime.now(timezone.utc) > self.expires_at.replace(tzinfo=timezone.utc)
 
-
-# --- 3. DEVICE MODEL (UPDATED FOR TOPOLOGY) ---
+# --- DEVICE TABLE ---
 class Device(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(64), unique=True, nullable=False)
     name = db.Column(db.String(128), nullable=False)
-    description = db.Column(db.Text)
-    device_type = db.Column(db.String(16), default="SWITCH")  # SWITCH, OLT, ROUTER, SERVER
-
-    # --- NEW: TOPOLOGY LINKS ---
+    device_type = db.Column(db.String(16), default="SWITCH")
     uplink_device_id = db.Column(db.Integer, db.ForeignKey('device.id'), nullable=True)
-    location = db.Column(db.String(100), default="Server Room")
-
     state = db.Column(db.String(16), default="UNKNOWN")
-    is_paused = db.Column(db.Boolean, default=False)
-    is_stopped = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Self-referential relationship (To get children)
     children = db.relationship('Device', backref=db.backref('uplink', remote_side=[id]))
-
-
-# --- 4. AUDIT MODEL ---
-class Audit(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    ts = db.Column(db.DateTime, default=datetime.utcnow)
-    user = db.Column(db.String(64))
-    action = db.Column(db.String(64))
-    detail = db.Column(db.Text)
