@@ -2,70 +2,113 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RTM Enterprise | System Provisioning</title>
+    <title>RTM Core | System Provisioning</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.net.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>
 </head>
-<body style="margin:0; overflow:hidden; background:black; font-family:'Roboto', sans-serif;">
+<body style="margin:0; overflow:hidden; background:#05070a; font-family:'Roboto', monospace;">
 
     <div id="vanta-bg" style="position:absolute; width:100%; height:100%; z-index:0;"></div>
 
     <div style="position:relative; z-index:10; height:100vh; display:flex; align-items:center; justify-content:center;">
-        <div class="panel" style="width:800px; height:500px; display:grid; grid-template-columns: 1fr 1fr; padding:0; background:rgba(21, 23, 27, 0.9); border:1px solid #333; box-shadow:0 0 50px rgba(0,0,0,0.8);">
+        <div class="panel jarvis-panel" style="width:950px; height:600px; display:grid; grid-template-columns: 0.8fr 1.2fr; padding:0; background:rgba(10, 15, 20, 0.85); border:1px solid rgba(0, 255, 242, 0.3); box-shadow:0 0 50px rgba(0, 255, 242, 0.15); border-radius:4px; overflow:hidden; backdrop-filter:blur(10px);">
 
-            <div style="padding:40px; display:flex; flex-direction:column; justify-content:center;">
-                <h2 style="color:#0984e3; margin:0;">SYSTEM SETUP</h2>
-                <p style="color:#888; font-size:12px; margin-bottom:30px;">PROVISION NEW CLIENT INSTANCE</p>
+            <div style="padding:40px; border-right:1px solid rgba(0, 255, 242, 0.2); display:flex; flex-direction:column; justify-content:center; position:relative;">
+
+                <div style="position:absolute; top:20px; left:20px; width:30px; height:2px; background:#00fff2;"></div>
+                <div style="position:absolute; bottom:20px; left:20px; width:30px; height:2px; background:#00fff2;"></div>
+
+                <h2 style="color:#00fff2; margin:0 0 5px 0; letter-spacing:2px; font-size:20px;">// CORE PROVISIONING</h2>
+                <p style="color:#00fff2; opacity:0.7; font-size:10px; margin-bottom:30px; text-transform:uppercase;">INITIALIZE NEW CLIENT PROTOCOL</p>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div style="color:{% if category=='success' %}#2ecc71{% else %}#ff4d4d{% endif %}; font-size:12px; margin-bottom:15px;">
-                                {{ message }}
+                            <div style="font-size:11px; margin-bottom:15px; padding:10px; border-radius:2px; border:1px solid;
+                                        {% if category=='success' %}border-color:#2ecc71; color:#2ecc71; background:rgba(46,204,113,0.05);{% else %}border-color:#ff4757; color:#ff4757; background:rgba(231,76,60,0.05);{% endif %}">
+                                > {{ message }}
                             </div>
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
 
                 <form method="POST">
-                    <label style="color:#666; font-size:10px; font-weight:bold;">CLIENT USERNAME</label>
-                    <input type="text" name="username" class="setup-input" placeholder="admin" required>
+                    <input type="hidden" name="action" value="create">
 
-                    <label style="color:#666; font-size:10px; font-weight:bold;">ACCESS PASSWORD</label>
-                    <input type="text" name="password" class="setup-input" placeholder="StrongPassword123" required>
+                    <label class="input-label">ACCESS ID (USERNAME)</label>
+                    <input type="text" name="username" class="setup-input" placeholder="Enter Identifier" required autocomplete="off">
 
-                    <label style="color:#666; font-size:10px; font-weight:bold;">SUBSCRIPTION VALIDITY</label>
-                    <select name="duration" class="setup-input">
-                        <option value="30">30 Days (Trial)</option>
-                        <option value="90">3 Months</option>
-                        <option value="180">6 Months</option>
-                        <option value="365" selected>1 Year (Standard)</option>
-                        <option value="3650">Lifetime (Enterprise)</option>
+                    <label class="input-label">SECURE KEY (PASSWORD)</label>
+                    <input type="text" name="password" class="setup-input" placeholder="Enter Keyphrase" required autocomplete="off">
+
+                    <label class="input-label">PROTOCOL DURATION</label>
+                    <select name="duration" class="setup-input" style="cursor:pointer;">
+                        <option value="test_5m" style="color:#ff9f43;">[⚡] T-MINUS 5 MINUTE TEST</option>
+                        <option value="30">[T] 30 DAY TRIAL</option>
+                        <option value="90">[Q] 3 MONTH QUARTER</option>
+                        <option value="365" selected>[A] 1 YEAR STANDARD</option>
+                        <option value="3650">[L] LIFETIME ACCESS</option>
                     </select>
 
-                    <button class="btn-setup">CREATE & ACTIVATE</button>
+                    <button class="btn-setup">
+                        <i class="fa-solid fa-microchip"></i> INITIALIZE INSTANCE
+                    </button>
                 </form>
-
-                <div style="margin-top:20px; font-size:10px; color:#555;">
-                    <i class="fa-solid fa-lock"></i> Hardware ID Locked: <span style="color:#0984e3;">ACTIVE</span>
-                </div>
             </div>
 
-            <div style="background:rgba(0,0,0,0.3); border-left:1px solid #333; padding:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <span style="color:white; font-size:14px; font-weight:bold;">ACTIVE USERS</span>
-                    <a href="{{ url_for('main.logout') }}" style="color:#ff4d4d; font-size:11px; text-decoration:none;">LOGOUT</a>
+            <div style="background:rgba(0, 255, 242, 0.03); padding:30px; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(0, 255, 242, 0.2); padding-bottom:15px;">
+                    <span style="color:#00fff2; font-size:14px; font-weight:bold; letter-spacing:1px;">ACTIVE NODES</span>
+                    <a href="{{ url_for('main.logout') }}" style="color:#ff4757; font-size:10px; text-decoration:none; border:1px solid #ff4757; padding:4px 12px; border-radius:2px; text-transform:uppercase; letter-spacing:1px;">
+                        <i class="fa-solid fa-power-off"></i> TERMINATE
+                    </a>
                 </div>
 
-                <div style="overflow-y:auto; height:380px;">
+                <div style="overflow-y:auto; flex:1; padding-right:5px;" class="tech-scrollbar">
                     {% for u in users %}
-                    <div style="background:#111; padding:10px; margin-bottom:10px; border-radius:4px; border-left:3px solid #2ecc71;">
-                        <div style="color:white; font-weight:bold;">{{ u.username }}</div>
-                        <div style="color:#666; font-size:10px;">EXP: {{ u.expires_at.strftime('%Y-%m-%d') }}</div>
+                    <div class="user-card {% if not u.active %}blocked{% endif %}">
+                        <div style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-user-astronaut" style="color:#00fff2; font-size:12px;"></i>
+                                <span style="color:white; font-weight:bold; font-size:13px; letter-spacing:1px;">{{ u.username }}</span>
+                                {% if not u.active %}
+                                    <span style="background:rgba(255, 71, 87, 0.2); color:#ff4757; border:1px solid #ff4757; font-size:8px; padding:2px 6px; border-radius:2px;">OFFLINE</span>
+                                {% endif %}
+                            </div>
+                            <div style="color:#00fff2; opacity:0.7; font-size:10px; margin-top:4px; font-family:monospace;">
+                                <i class="fa-regular fa-clock"></i> EXP: {{ u.expires_at.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:5px;">
+                            <form method="POST" title="Renew (+1 Year)">
+                                <input type="hidden" name="action" value="renew">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <button class="btn-icon renew"><i class="fa-solid fa-rotate"></i></button>
+                            </form>
+
+                            <form method="POST" title="{{ 'Unblock' if not u.active else 'Block' }}">
+                                <input type="hidden" name="action" value="toggle_block">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <button class="btn-icon block {% if not u.active %}active{% endif %}">
+                                    <i class="fa-solid fa-ban"></i>
+                                </button>
+                            </form>
+
+                            <form method="POST" title="Delete User" onsubmit="return confirm('WARNING: Confirm termination of node {{ u.username }}?');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <button class="btn-icon delete"><i class="fa-solid fa-trash-can"></i></button>
+                            </form>
+                        </div>
                     </div>
                     {% else %}
-                        <div style="color:#555; font-size:12px; text-align:center; margin-top:50px;">No Active Users</div>
+                        <div style="color:#00fff2; opacity:0.5; font-size:12px; text-align:center; margin-top:80px; font-family:monospace;">
+                            <i class="fa-solid fa-satellite-dish" style="font-size:24px; margin-bottom:15px; opacity:0.3;"></i><br>
+                            // NO ACTIVE INSTANCES DETECTED
+                        </div>
                     {% endfor %}
                 </div>
             </div>
@@ -73,14 +116,37 @@
     </div>
 
     <style>
-        .setup-input { width:100%; padding:10px; margin-bottom:15px; background:#0b0c0e; border:1px solid #333; color:white; border-radius:4px; outline:none; font-family:monospace; }
-        .setup-input:focus { border-color:#0984e3; }
-        .btn-setup { width:100%; padding:12px; background:#0984e3; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; }
-        .btn-setup:hover { background:#00cec9; }
+        /* JARVIS THEME STYLES */
+        .input-label { color:#00fff2; opacity:0.8; font-size:9px; font-weight:bold; margin-bottom:6px; display:block; letter-spacing:1px; }
+        .setup-input { width:100%; padding:12px; margin-bottom:18px; background:rgba(0, 255, 242, 0.05); border:1px solid rgba(0, 255, 242, 0.3); color:#00fff2; border-radius:2px; outline:none; font-family:monospace; font-size:13px; transition:0.3s; }
+        .setup-input:focus { border-color:#00fff2; box-shadow:0 0 15px rgba(0, 255, 242, 0.2); background:rgba(0, 255, 242, 0.1); }
+
+        .btn-setup { width:100%; padding:14px; background:rgba(0, 255, 242, 0.1); color:#00fff2; border:1px solid #00fff2; border-radius:2px; font-weight:bold; cursor:pointer; margin-top:15px; letter-spacing:2px; transition:0.3s; }
+        .btn-setup:hover { background:#00fff2; color:black; box-shadow:0 0 25px rgba(0, 255, 242, 0.6); }
+
+        .user-card { background:rgba(0, 255, 242, 0.05); padding:12px; margin-bottom:10px; border-radius:2px; border-left:2px solid #2ecc71; display:flex; justify-content:space-between; align-items:center; transition:0.2s; border:1px solid rgba(0, 255, 242, 0.1); }
+        .user-card:hover { background:rgba(0, 255, 242, 0.1); border-color:rgba(0, 255, 242, 0.3); box-shadow:0 0 10px rgba(0, 255, 242, 0.1); }
+        .user-card.blocked { border-left-color:#ff4757; opacity:0.8; }
+
+        .btn-icon { width:30px; height:30px; border:1px solid rgba(255,255,255,0.1); border-radius:2px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; font-size:12px; transition:0.2s; background:rgba(0,0,0,0.3); }
+        .btn-icon.renew { color:#2ecc71; border-color:rgba(46, 204, 113, 0.3); }
+        .btn-icon.renew:hover { background:#2ecc71; color:black; box-shadow:0 0 10px rgba(46, 204, 113, 0.5); }
+
+        .btn-icon.block { color:#ff9f43; border-color:rgba(255, 159, 67, 0.3); }
+        .btn-icon.block:hover { background:#ff9f43; color:black; box-shadow:0 0 10px rgba(255, 159, 67, 0.5); }
+        .btn-icon.block.active { background:rgba(255, 159, 67, 0.2); color:#ff9f43; border-color:#ff9f43; }
+
+        .btn-icon.delete { color:#ff4757; border-color:rgba(255, 71, 87, 0.3); }
+        .btn-icon.delete:hover { background:#ff4757; color:white; box-shadow:0 0 10px rgba(255, 71, 87, 0.5); }
+
+        /* Custom Scrollbar for Tech Look */
+        .tech-scrollbar::-webkit-scrollbar { width: 4px; }
+        .tech-scrollbar::-webkit-scrollbar-track { background: rgba(0, 255, 242, 0.05); }
+        .tech-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 255, 242, 0.3); }
     </style>
 
     <script>
-        VANTA.NET({
+        VANTA.GLOBE({
             el: "#vanta-bg",
             mouseControls: true,
             touchControls: true,
@@ -89,11 +155,10 @@
             minWidth: 200.00,
             scale: 1.00,
             scaleMobile: 1.00,
-            color: 0x0984e3,       /* CONNECTION LINE COLOR */
-            backgroundColor: 0x0b0c0e, /* BACKGROUND COLOR */
-            points: 12.00,
-            maxDistance: 22.00,
-            spacing: 18.00
+            color: 0x00fff2,       /* JARVIS CYAN/BLUE */
+            backgroundColor: 0x05070a, /* DEEP SPACE BLACK */
+            size: 1.5,             /* LARGE GLOBE */
+            atmosphere: true       /* GLOW EFFECT */
         })
     </script>
 </body>
