@@ -2,25 +2,193 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RTM Enterprise | Login</title>
+    <title>RTM Enterprise | Secure Access</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+    <style>
+        /* Login Page Specific Styles */
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background-color: #0b0c0e; /* Deep Black Background */
+        }
+
+        /* The Animation Container */
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1; /* Behind the login box */
+        }
+
+        /* The Login Box */
+        .login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10; /* Above the animation */
+            width: 350px;
+            padding: 40px;
+            background: rgba(21, 23, 27, 0.85); /* Glass Effect */
+            border: 1px solid rgba(9, 132, 227, 0.3);
+            border-top: 4px solid #0984e3;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+            text-align: center;
+        }
+
+        .login-title {
+            color: white;
+            margin: 0 0 10px 0;
+            font-family: 'Roboto', sans-serif;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .login-subtitle {
+            color: #8b92a1;
+            font-size: 11px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #2c3038;
+            color: white;
+            font-family: monospace;
+            border-radius: 4px;
+            box-sizing: border-box; /* Fix padding issue */
+            transition: 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #0984e3;
+            outline: none;
+            box-shadow: 0 0 10px rgba(9, 132, 227, 0.2);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: #0984e3;
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+
+        .btn-login:hover {
+            background: #00cec9;
+            box-shadow: 0 0 15px rgba(0, 206, 201, 0.4);
+        }
+
+        /* Flash Message Style */
+        .alert {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: white;
+            background: rgba(255, 77, 77, 0.2);
+            border: 1px solid #ff4d4d;
+        }
+
+        .alert-success { border-color: #2ecc71; background: rgba(46, 204, 113, 0.2); }
+        .alert-warning { border-color: #f39c12; background: rgba(243, 156, 18, 0.2); }
+
+        /* Footer */
+        .footer {
+            margin-top: 20px;
+            font-size: 10px;
+            color: #555;
+        }
+    </style>
 </head>
-<body style="display:flex; align-items:center; justify-content:center; background:#0b0c0e;">
-    <div class="panel" style="width:350px; padding:30px; text-align:center; border-top:4px solid var(--color-blue);">
-        <h2 style="color:white; margin:0 0 10px 0;">RTM ENTERPRISE</h2>
-        <p style="color:var(--text-muted); font-size:12px; margin-bottom:30px;">SECURE ACCESS GATEWAY</p>
+<body>
+
+    <div id="particles-js"></div>
+
+    <div class="login-container">
+        <h2 class="login-title">RTM ENTERPRISE</h2>
+        <div class="login-subtitle">Secure Network Gateway</div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <form method="POST">
-            <input type="text" name="username" class="form-control" placeholder="Identity" required
-                   style="width:100%; padding:12px; margin-bottom:15px; background:#15171b; border:1px solid var(--border); color:white;">
+            <input type="text" name="username" class="form-control" placeholder="IDENTITY" required autocomplete="off">
+            <input type="password" name="password" class="form-control" placeholder="ACCESS KEY" required>
 
-            <input type="password" name="password" class="form-control" placeholder="Credential" required
-                   style="width:100%; padding:12px; margin-bottom:20px; background:#15171b; border:1px solid var(--border); color:white;">
-
-            <button style="width:100%; padding:12px; background:var(--color-blue); color:white; border:none; font-weight:bold; cursor:pointer; border-radius:4px;">
-                AUTHENTICATE
-            </button>
+            <button type="submit" class="btn-login">Authenticate</button>
         </form>
+
+        <div class="footer">
+            SYSTEM ID: LOCKED<br>
+            VERSION 2.5.0 STABLE
+        </div>
     </div>
+
+    <script>
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#0984e3" }, /* Blue Dots */
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.5, "random": false },
+                "size": { "value": 3, "random": true },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#0984e3", /* Blue Lines */
+                    "opacity": 0.2,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2, /* Slow Movement */
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": { "enable": true, "mode": "grab" }, /* Connects lines on mouse hover */
+                    "onclick": { "enable": true, "mode": "push" },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": { "distance": 140, "line_linked": { "opacity": 1 } }
+                }
+            },
+            "retina_detect": true
+        });
+    </script>
+
 </body>
 </html>
