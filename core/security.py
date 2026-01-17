@@ -1,78 +1,59 @@
 import subprocess
 import hashlib
 import platform
+import uuid
 from datetime import datetime
 
 
 class SecurityManager:
-    """
-    RTM Enterprise Security Module
-    Handles Hardware Locking & License Verification
-    """
-
-    # Secret Key for Digital Seal (Don't change this after deployment)
-    LICENSE_SECRET = "RTM_SECURE_SALT_V2_2026"
+    LICENSE_SECRET = "RTM_SUPER_SECRET_SALT_V99"
 
     @staticmethod
     def get_system_id():
-        """Get Motherboard Serial Number (Unique Hardware ID)"""
+        """
+        Robust Hardware ID Generation.
+        Tries WMIC -> CPUID -> MAC Address (UUID)
+        """
+        serial = ""
         try:
+            # Method 1: Windows WMIC (Primary)
             if platform.system() == "Windows":
-                # Command to get Board Serial
-                cmd = "wmic baseboard get serialnumber"
-                serial = subprocess.check_output(cmd, shell=True).decode().split('\n')[1].strip()
+                try:
+                    cmd = "wmic baseboard get serialnumber"
+                    serial = subprocess.check_output(cmd, shell=True).decode().split('\n')[1].strip()
+                except:
+                    pass
 
-                # If Serial is empty (Common in some VMs), get CPU ID
-                if not serial:
-                    serial = subprocess.check_output("wmic cpu get processorid", shell=True).decode().split('\n')[
-                        1].strip()
+            # Method 2: UUID (MAC Address Based) - 100% Works if Method 1 fails
+            if not serial or "To be filled" in serial:
+                serial = str(uuid.getnode())
 
-                # Hash it so it looks clean
-                return hashlib.sha256(serial.encode()).hexdigest()
-            else:
-                return "NON_WINDOWS_GENERIC_ID"
+            return hashlib.sha256(serial.encode()).hexdigest()
         except:
-            return "UNKNOWN_HW_ID_000"
+            return "FALLBACK_HW_ID_000"
 
     @staticmethod
     def generate_license_hash(expiry_date_str, hw_id):
-        """
-        Create Digital Seal:
-        Hash( Date + HardwareID + SecretKey )
-        """
+        # Seal = Date + HW_ID + Secret
         raw_data = f"{expiry_date_str}|{hw_id}|{SecurityManager.LICENSE_SECRET}"
         return hashlib.sha256(raw_data.encode()).hexdigest()
 
     @staticmethod
     def verify_license(user):
-        """
-        Check if License is Valid, Expired, or Tampered
-        Returns: (True/False, "Message")
-        """
         if not user or not user.expires_at or not user.license_hash:
-            return False, "License Missing or Invalid."
+            return False, "License Not Found."
 
-        # 1. Check Date Expiry
+        # 1. Date Check
         days_left = (user.expires_at - datetime.now()).days
         if days_left < 0:
-            return False, "License Expired. Contact Support."
+            return False, "License Expired."
 
-        # 2. Check Integrity (Hardware Lock + Tamper Proof)
+        # 2. Hardware/Tamper Check
         current_hw = SecurityManager.get_system_id()
         expiry_str = user.expires_at.strftime('%Y-%m-%d')
-
-        # Re-calculate what the seal SHOULD be
         calculated_seal = SecurityManager.generate_license_hash(expiry_str, current_hw)
 
-        # Compare with what is in the Database
         if user.license_hash != calculated_seal:
-            return False, "CRITICAL: System Mismatch or Data Tampered!"
+            return False, "CRITICAL: Hardware Mismatch or Date Tampered!"
 
         return True, "Valid"
-
-    @staticmethod
-    def is_system_expired(user=None):
-        # Helper function for Routes
-        if not user: return False
-        valid, msg = SecurityManager.verify_license(user)
-        return not valid
