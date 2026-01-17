@@ -6,7 +6,7 @@ import bcrypt
 db = SQLAlchemy()
 
 
-# --- SETTINGS TABLE ---
+# --- SETTINGS ---
 class Setting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(64), unique=True, nullable=False)
@@ -34,16 +34,16 @@ class Setting(db.Model):
             db.session.rollback()
 
 
-# --- USER TABLE (UPDATED) ---
+# --- USER (LICENSE LOCKED) ---
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(16), default="ADMIN")
 
-    # --- NEW LICENSE FIELDS ---
-    expires_at = db.Column(db.DateTime)  # License Expiry Date
-    license_hash = db.Column(db.String(128))  # The Digital Lock (Seal)
+    # LICENSE DATA
+    expires_at = db.Column(db.DateTime)
+    license_hash = db.Column(db.String(128))
 
     active = db.Column(db.Boolean, default=True)
 
@@ -57,14 +57,18 @@ class User(db.Model, UserMixin):
             return False
 
 
-# --- DEVICE TABLE ---
+# --- DEVICES (FIXED CRASH) ---
 class Device(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(64), unique=True, nullable=False)
     name = db.Column(db.String(128), nullable=False)
     device_type = db.Column(db.String(16), default="SWITCH")
     uplink_device_id = db.Column(db.Integer, db.ForeignKey('device.id'), nullable=True)
+
+    # --- RESTORED MISSING COLUMNS ---
     state = db.Column(db.String(16), default="UNKNOWN")
+    is_paused = db.Column(db.Boolean, default=False)  # Fixed Crash
+    is_stopped = db.Column(db.Boolean, default=False)  # Fixed Crash
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     children = db.relationship('Device', backref=db.backref('uplink', remote_side=[id]))
