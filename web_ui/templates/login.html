@@ -2,97 +2,256 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RTM Enterprise | Secure Access</title>
+    <title>RTM Enterprise | Identity Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.net.min.js"></script>
-</head>
-<body style="margin:0; overflow:hidden; background:black;">
-
-    <div id="vanta-canvas" style="position:absolute; width:100%; height:100%; z-index:0;"></div>
-
-    <div class="login-container">
-        <h2 class="login-title">RTM ENTERPRISE</h2>
-        <div class="login-subtitle">SECURE NETWORK GATEWAY</div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <form method="POST">
-            <input type="text" name="username" class="form-control" placeholder="IDENTITY" required autocomplete="off">
-            <input type="password" name="password" class="form-control" placeholder="ACCESS KEY" required>
-
-            <button type="submit" class="btn-login">AUTHENTICATE</button>
-        </form>
-
-        <div class="footer">
-            SYSTEM ID: <span style="color:#0984e3;">LOCKED</span><br>
-            VERSION 2.5.0 STABLE
-        </div>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        .login-container {
+        /* --- CORE LAYOUT --- */
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505; /* Deepest Black */
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* BACKGROUND ANIMATION LAYER */
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+            z-index: 1;
+        }
+
+        /* --- LOGIN CARD (Glass + Hexagon Theme) --- */
+        .login-wrapper {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            width: 320px;
+            width: 380px;
+            padding: 2px; /* For Gradient Border */
+            background: linear-gradient(135deg, #0984e3, #2ecc71); /* Gradient Border */
+            border-radius: 6px;
+            box-shadow: 0 0 50px rgba(9, 132, 227, 0.15);
+        }
+
+        .login-box {
+            background: #0b0c0e; /* Inner Black */
             padding: 40px;
-            background: rgba(11, 12, 14, 0.6); /* Glass Effect */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #0984e3;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
             border-radius: 4px;
-            backdrop-filter: blur(8px);
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
-        .login-title { color: white; margin: 0; letter-spacing: 2px; font-family:sans-serif; }
-        .login-subtitle { color: #888; font-size: 10px; margin-bottom: 30px; letter-spacing: 1px; font-family:monospace; }
+
+        /* Top Accent Line */
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #0984e3, transparent);
+        }
+
+        /* LOGO / TITLE */
+        .brand-icon {
+            font-size: 40px;
+            background: -webkit-linear-gradient(#0984e3, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #636e72;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 30px;
+        }
+
+        /* FORM INPUTS */
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-label {
+            color: #0984e3;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            text-transform: uppercase;
+        }
+
         .form-control {
-            width: 100%; padding: 12px; margin-bottom: 15px;
-            background: rgba(0, 0, 0, 0.5); border: 1px solid #333;
-            color: white; font-family: monospace; border-radius: 3px;
-            box-sizing: border-box; transition: 0.3s;
+            width: 100%;
+            padding: 12px 15px;
+            background: #15171b;
+            border: 1px solid #2d3436;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: 0.3s;
+            outline: none;
         }
-        .form-control:focus { border-color: #0984e3; outline: none; background: rgba(9, 132, 227, 0.1); }
+
+        .form-control:focus {
+            border-color: #0984e3;
+            background: #1a1d21;
+            box-shadow: 0 0 10px rgba(9, 132, 227, 0.1);
+        }
+
+        /* BUTTON */
         .btn-login {
-            width: 100%; padding: 12px; background: #0984e3; color: white;
-            border: none; font-weight: bold; cursor: pointer; border-radius: 3px;
-            letter-spacing: 1px; transition: 0.3s;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: linear-gradient(90deg, #0984e3, #0077c2);
+            color: white;
+            border: none;
+            font-weight: bold;
+            font-size: 12px;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
         }
-        .btn-login:hover { background: white; color: black; box-shadow: 0 0 15px white; }
-        .alert { padding: 10px; margin-bottom: 15px; border-radius: 3px; font-size: 11px; color: white; }
-        .alert-danger { background: rgba(255, 77, 77, 0.2); border: 1px solid #ff4d4d; }
-        .alert-success { background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; }
-        .footer { margin-top: 20px; font-size: 9px; color: #555; font-family: monospace; }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(9, 132, 227, 0.3);
+        }
+
+        /* ALERTS */
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alert-danger { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
+        .alert-success { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
+        .alert-warning { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; color: #f1c40f; }
+
+        /* FOOTER */
+        .sys-info {
+            margin-top: 25px;
+            font-size: 9px;
+            color: #444;
+            border-top: 1px solid #2d3436;
+            padding-top: 15px;
+        }
     </style>
+</head>
+<body>
+
+    <div id="particles-js"></div>
+
+    <div class="login-wrapper">
+        <div class="login-box">
+
+            <div class="brand-icon"><i class="fa-brands fa-hubspot"></i></div>
+            <div class="title">RTM ENTERPRISE</div>
+            <div class="subtitle">Network Operations Center</div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="input-group">
+                    <label class="input-label">Identity</label>
+                    <input type="text" name="username" class="form-control" placeholder="ENTER USERNAME" autocomplete="off" required>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Access Key</label>
+                    <input type="password" name="password" class="form-control" placeholder="ENTER PASSWORD" required>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    Initialize Session <i class="fa-solid fa-arrow-right" style="margin-left:5px;"></i>
+                </button>
+            </form>
+
+            <div class="sys-info">
+                SYSTEM ID: <span style="color:#0984e3; font-family:monospace;">SECURE-NODE-01</span><br>
+                ENCRYPTION: AES-256 / HW-LOCKED
+            </div>
+        </div>
+    </div>
 
     <script>
-        VANTA.NET({
-            el: "#vanta-canvas",
-            mouseControls: true,
-            touchControls: true,
-            gyroControls: false,
-            minHeight: 200.00,
-            minWidth: 200.00,
-            scale: 1.00,
-            scaleMobile: 1.00,
-            color: 0x0984e3,       /* Main Blue */
-            backgroundColor: 0x050505, /* Deep Black */
-            points: 10.00,         /* More Dots */
-            maxDistance: 20.00,    /* Connect Distance */
-            spacing: 16.00,
-            showDots: true
-        })
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 60, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#0984e3" }, /* Enterprise Blue Hexagons */
+                "shape": {
+                    "type": "polygon",
+                    "stroke": { "width": 0, "color": "#000" },
+                    "polygon": { "nb_sides": 6 } /* HEXAGON SHAPE */
+                },
+                "opacity": { "value": 0.3, "random": true },
+                "size": { "value": 4, "random": false },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#0984e3",
+                    "opacity": 0.2,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 1.5,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false,
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": { "enable": true, "mode": "grab" }, /* Magnetic Connection */
+                    "onclick": { "enable": true, "mode": "push" },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": { "distance": 180, "line_linked": { "opacity": 0.8 } },
+                    "push": { "particles_nb": 4 }
+                }
+            },
+            "retina_detect": true
+        });
     </script>
+
 </body>
 </html>
