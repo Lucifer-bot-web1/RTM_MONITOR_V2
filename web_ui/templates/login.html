@@ -2,31 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RTM Enterprise | Core Access</title>
+    <title>RTM Enterprise | Network Access</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* --- LAYOUT & BACKGROUND --- */
+        /* --- LAYOUT & MAP BACKGROUND --- */
         body, html {
             height: 100%;
             margin: 0;
             overflow: hidden;
-            background-color: #020202; /* Fiber Core Black */
+            background-color: #050505; /* Deep Black */
             font-family: 'Roboto', sans-serif;
         }
 
-        #fiber-network {
+        #topology-map {
             position: absolute;
             width: 100%;
             height: 100%;
             z-index: 1;
-            /* Subtle grid to represent Geo-Map */
+            /* Faint Grid for Map Effect */
             background-image:
-                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
         /* --- LOGIN TOWER CARD --- */
@@ -36,18 +36,19 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            width: 360px;
-            background: rgba(10, 15, 20, 0.85); /* Dark Glass */
-            border: 1px solid rgba(0, 255, 242, 0.2); /* Cyan Border */
-            border-bottom: 4px solid #00fff2; /* Fiber Cyan Accent */
-            box-shadow: 0 0 60px rgba(0, 255, 242, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 8px;
+            width: 380px;
+            /* Glassmorphism with Dark Tint */
+            background: rgba(15, 20, 25, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #0984e3; /* Network Blue */
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 6px;
             text-align: center;
             padding: 40px 30px;
         }
 
-        /* --- TOWER SIGNAL ANIMATION --- */
+        /* --- TOWER ANIMATION (You Liked This) --- */
         .signal-tower {
             position: relative;
             width: 60px;
@@ -59,60 +60,59 @@
         }
 
         .tower-icon {
-            font-size: 30px;
-            color: #00fff2;
+            font-size: 32px;
+            color: #0984e3;
             z-index: 2;
+            filter: drop-shadow(0 0 10px rgba(9, 132, 227, 0.6));
         }
 
-        /* Pulsing Rings (Signal Waves) */
         .signal-ring {
             position: absolute;
             width: 100%;
             height: 100%;
-            border: 2px solid #00fff2;
+            border: 2px solid #0984e3;
             border-radius: 50%;
             opacity: 0;
-            animation: pulse-signal 2s infinite ease-out;
+            animation: pulse-signal 2.5s infinite ease-out;
         }
-        .signal-ring:nth-child(2) { animation-delay: 0.5s; }
-        .signal-ring:nth-child(3) { animation-delay: 1s; }
+        .signal-ring:nth-child(2) { animation-delay: 0.6s; }
+        .signal-ring:nth-child(3) { animation-delay: 1.2s; }
 
         @keyframes pulse-signal {
-            0% { transform: scale(0.5); opacity: 1; }
-            100% { transform: scale(1.5); opacity: 0; }
+            0% { transform: scale(0.5); opacity: 0.8; border-width: 2px; }
+            100% { transform: scale(1.8); opacity: 0; border-width: 0px; }
         }
 
-        /* --- TEXT STYLES --- */
+        /* --- TYPOGRAPHY --- */
         .title {
             color: white;
             font-size: 22px;
-            font-weight: 800;
+            font-weight: 700;
             letter-spacing: 1px;
             margin: 0;
         }
         .subtitle {
-            color: #00fff2; /* Cyan Text */
+            color: #888;
             font-size: 10px;
-            font-weight: bold;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 2px;
             margin-bottom: 30px;
-            text-shadow: 0 0 10px rgba(0, 255, 242, 0.5);
         }
 
-        /* --- FORM ELEMENTS --- */
+        /* --- FORM --- */
         .input-group { position: relative; margin-bottom: 20px; text-align: left; }
 
         .input-label {
-            color: #888; font-size: 9px; font-weight: bold; margin-bottom: 6px; display: block;
+            color: #0984e3; font-size: 9px; font-weight: bold; margin-bottom: 6px; display: block;
         }
 
         .form-control {
             width: 100%;
             padding: 12px 15px;
-            background: #05070a;
+            background: #0b0c0e;
             border: 1px solid #333;
-            color: #00fff2; /* Hacker Style Input */
+            color: white;
             font-family: 'Courier New', monospace;
             font-size: 14px;
             border-radius: 4px;
@@ -120,19 +120,19 @@
             outline: none;
         }
         .form-control:focus {
-            border-color: #00fff2;
-            box-shadow: 0 0 15px rgba(0, 255, 242, 0.1);
+            border-color: #0984e3;
+            box-shadow: 0 0 10px rgba(9, 132, 227, 0.2);
         }
 
         .btn-connect {
             width: 100%;
             padding: 12px;
-            background: rgba(0, 255, 242, 0.1);
-            color: #00fff2;
-            border: 1px solid #00fff2;
+            background: #0984e3;
+            color: white;
+            border: none;
             font-weight: bold;
             font-size: 12px;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             border-radius: 4px;
             cursor: pointer;
             transition: 0.3s;
@@ -140,18 +140,11 @@
             margin-top: 10px;
         }
         .btn-connect:hover {
-            background: #00fff2;
-            color: black;
-            box-shadow: 0 0 20px #00fff2;
+            background: #0768b5;
+            box-shadow: 0 0 15px rgba(9, 132, 227, 0.4);
         }
 
-        /* --- ALERTS & FOOTER --- */
-        .alert {
-            font-size: 10px; padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: left; border-left: 3px solid;
-        }
-        .alert-danger { background: rgba(255,0,0,0.1); border-color: #ff4d4d; color: #ff4d4d; }
-        .alert-success { background: rgba(0,255,0,0.1); border-color: #2ecc71; color: #2ecc71; }
-
+        /* --- FOOTER --- */
         .footer {
             margin-top: 25px;
             border-top: 1px solid #222;
@@ -161,11 +154,17 @@
             display: flex;
             justify-content: space-between;
         }
+
+        .alert {
+            font-size: 10px; padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: left;
+        }
+        .alert-danger { background: rgba(255,0,0,0.1); border: 1px solid #ff4d4d; color: #ff4d4d; }
+        .alert-success { background: rgba(0,255,0,0.1); border: 1px solid #2ecc71; color: #2ecc71; }
     </style>
 </head>
 <body>
 
-    <div id="fiber-network"></div>
+    <div id="topology-map"></div>
 
     <div class="login-wrapper">
 
@@ -173,11 +172,11 @@
             <div class="signal-ring"></div>
             <div class="signal-ring"></div>
             <div class="signal-ring"></div>
-            <i class="fa-solid fa-tower-broadcast tower-icon"></i>
+            <i class="fa-solid fa-tower-cell tower-icon"></i>
         </div>
 
-        <div class="title">CORE CONNECT</div>
-        <div class="subtitle">Fiber Transmission System</div>
+        <div class="title">CORE ACCESS</div>
+        <div class="subtitle">Secure Network Gateway</div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -191,47 +190,47 @@
 
         <form method="POST">
             <div class="input-group">
-                <label class="input-label">NODE IDENTITY</label>
-                <input type="text" name="username" class="form-control" placeholder="USER-ID" required autocomplete="off">
+                <label class="input-label">NODE ID</label>
+                <input type="text" name="username" class="form-control" placeholder="USERNAME" required autocomplete="off">
             </div>
 
             <div class="input-group">
-                <label class="input-label">SECURE KEY</label>
-                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                <label class="input-label">KEY</label>
+                <input type="password" name="password" class="form-control" placeholder="PASSWORD" required>
             </div>
 
             <button type="submit" class="btn-connect">
-                <i class="fa-solid fa-bolt"></i> ESTABLISH LINK
+                Initialize Session
             </button>
         </form>
 
         <div class="footer">
-            <span>STATUS: <span style="color:#2ecc71;">ONLINE</span></span>
-            <span>DATA CENTER: CHN-01</span>
+            <span>LINK: <span style="color:#2ecc71;">STABLE</span></span>
+            <span>ZONE: SECURE-01</span>
         </div>
     </div>
 
     <script>
-        particlesJS("fiber-network", {
+        particlesJS("topology-map", {
             "particles": {
-                "number": { "value": 100, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#00fff2" }, /* Cyan Data Packets */
+                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#ffffff" }, /* White Nodes */
                 "shape": { "type": "circle" },
-                "opacity": { "value": 0.8, "random": true },
-                "size": { "value": 2, "random": false },
+                "opacity": { "value": 0.4, "random": false },
+                "size": { "value": 3, "random": true },
                 "line_linked": {
                     "enable": true,
-                    "distance": 200, /* Long Cables */
-                    "color": "#00fff2", /* Cyan Cables */
+                    "distance": 150,
+                    "color": "#0984e3", /* Blue Links (Network Cables) */
                     "opacity": 0.3,
                     "width": 1
                 },
                 "move": {
                     "enable": true,
-                    "speed": 8, /* HIGH SPEED (Fiber) */
-                    "direction": "right", /* Flowing Direction */
+                    "speed": 1, /* Slow Movement (Floating Map) */
+                    "direction": "none",
                     "random": false,
-                    "straight": true, /* Straight Lines like Cables */
+                    "straight": false,
                     "out_mode": "out",
                     "bounce": false
                 }
@@ -239,9 +238,12 @@
             "interactivity": {
                 "detect_on": "canvas",
                 "events": {
-                    "onhover": { "enable": false }, /* No mouse disturb, purely flow */
+                    "onhover": { "enable": true, "mode": "grab" }, /* Mouse creates links */
                     "onclick": { "enable": true, "mode": "push" },
                     "resize": true
+                },
+                "modes": {
+                    "grab": { "distance": 180, "line_linked": { "opacity": 0.8 } }
                 }
             },
             "retina_detect": true
