@@ -2,59 +2,148 @@
 
 {% block content %}
 
-<div class="dashboard-grid">
+<style>
+    /* --- ANIMATIONS --- */
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+    }
+    @keyframes scan-line {
+        0% { top: 0%; opacity: 0; }
+        50% { opacity: 1; }
+        100% { top: 100%; opacity: 0; }
+    }
+    @keyframes ticker {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+    }
 
-    <div class="panel" style="grid-column: span 1;">
+    /* --- PANEL STYLES (CYBER GLASS) --- */
+    .panel {
+        background: rgba(10, 15, 20, 0.85);
+        border: 1px solid rgba(0, 255, 242, 0.2); /* Cyan Border */
+        box-shadow: 0 0 20px rgba(0, 255, 242, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    /* Corner Accents */
+    .panel::before { content: ''; position: absolute; top: 0; left: 0; width: 10px; height: 10px; border-top: 2px solid #00fff2; border-left: 2px solid #00fff2; }
+    .panel::after { content: ''; position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-bottom: 2px solid #00fff2; border-right: 2px solid #00fff2; }
+
+    .panel-header {
+        background: rgba(0, 255, 242, 0.05);
+        border-bottom: 1px solid rgba(0, 255, 242, 0.2);
+        color: #00fff2;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 1px;
+        font-weight: bold;
+    }
+
+    /* --- HEXAGON UPDATES --- */
+    .hex {
+        transition: transform 0.3s, filter 0.3s;
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        background: #1e272e;
+        margin: 2px;
+    }
+    .hex:hover { transform: scale(1.2); z-index: 10; cursor: pointer; filter: brightness(1.5); }
+
+    .hex.good { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+
+    /* CRITICAL PULSE ANIMATION */
+    .hex.crit {
+        background: #ff4757;
+        animation: pulse-red 1.5s infinite;
+        z-index: 5;
+    }
+
+    /* --- HUD POPUP --- */
+    #hud-modal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 9999;
+        align-items: center; justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+    .hud-box {
+        width: 400px; padding: 20px;
+        background: rgba(5, 10, 15, 0.95);
+        border: 2px solid #00fff2;
+        box-shadow: 0 0 50px rgba(0, 255, 242, 0.3);
+        color: #00fff2;
+        font-family: 'Courier New', monospace;
+        position: relative;
+    }
+    .hud-line { height: 1px; background: rgba(0, 255, 242, 0.3); margin: 10px 0; }
+    .hud-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .hud-val { color: white; font-weight: bold; }
+
+    /* --- LIVE TICKER --- */
+    .ticker-wrap {
+        position: fixed; bottom: 0; left: 60px; /* Adjust for sidebar */
+        width: calc(100% - 60px); height: 30px;
+        background: #000; border-top: 1px solid #00fff2;
+        color: #00fff2; font-family: monospace; font-size: 12px;
+        display: flex; align-items: center; overflow: hidden;
+        z-index: 1000;
+    }
+    .ticker-move {
+        display: inline-block; white-space: nowrap;
+        padding-left: 100%;
+        animation: ticker 30s linear infinite;
+    }
+    .ticker-item { display: inline-block; padding: 0 20px; }
+</style>
+
+<div class="dashboard-grid" style="padding-bottom: 40px;"> <div class="panel" style="grid-column: span 1;">
         <div class="panel-header">
-            <span>Network Health Overview</span>
-            <i class="fa-solid fa-ellipsis-vertical" style="cursor:pointer;"></i>
+            <i class="fa-solid fa-heart-pulse"></i> SYSTEM VITALITY
         </div>
         <div class="panel-body">
-            <div style="margin-bottom: 10px; font-size: 10px; color: var(--text-muted); font-weight:bold;">
-                DEVICE STATUS MATRIX
-            </div>
+            <div style="font-size: 10px; color: #888; margin-bottom: 10px;">ACTIVE NODES SCANNING...</div>
+
             <div class="honeycomb-grid">
                 {% if devices %}
                     {% for d in devices %}
                         <div class="hex {% if d.state == 'UP' %}good{% else %}crit{% endif %}"
-                             title="{{ d.name }} - {{ d.ip }}">
-                             </div>
+                             onclick="showHUD('{{d.name}}', '{{d.ip}}', '{{d.state}}', '{{d.device_type}}')"
+                             title="{{ d.name }}">
+                        </div>
                     {% endfor %}
                 {% else %}
-                    <div style="color:var(--text-muted); font-size:11px; padding:20px;">No Devices</div>
+                    <div style="color:#666; font-size:11px; padding:20px;">NO SIGNAL DETECTED</div>
                 {% endif %}
-                {% for i in range(10) %} <div class="hex" style="opacity: 0.1; background:#333;"></div> {% endfor %}
+                {% for i in range(15) %} <div class="hex" style="opacity: 0.1; background:#333;"></div> {% endfor %}
             </div>
 
-            <div style="margin-top: auto; display:flex; gap: 15px; font-size: 10px; padding-top:10px;">
-                <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:var(--color-crit)"></div> CRIT</div>
-                <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:var(--color-major)"></div> WARN</div>
-                <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:var(--color-good)"></div> GOOD</div>
+            <div style="margin-top: auto; display:flex; gap: 15px; font-size: 9px; color:#aaa;">
+                <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:#ff4757; box-shadow:0 0 5px #ff4757;"></div> CRIT</div>
+                <div style="display:flex; align-items:center; gap:5px;"><div class="status-dot" style="background:#2ecc71; box-shadow:0 0 5px #2ecc71;"></div> ONLINE</div>
             </div>
         </div>
     </div>
 
     <div class="panel" style="grid-column: span 1;">
-        <div class="panel-header">Interface Availability</div>
+        <div class="panel-header"><i class="fa-solid fa-chart-pie"></i> UPTIME RATIO</div>
         <div class="panel-body" style="display:flex; align-items:center; justify-content:center; position:relative;">
             <div style="height: 160px; width: 160px;">
                 <canvas id="availabilityChart"></canvas>
             </div>
-            <div style="position:absolute; text-align:center; pointer-events:none;">
-                <div style="font-size: 28px; font-weight:bold; color:var(--text-main);">{{ total }}</div>
-                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px;">TOTAL</div>
+            <div style="position:absolute; text-align:center;">
+                <div style="font-size: 24px; font-weight:bold; color:white; text-shadow:0 0 10px white;">{{ total }}</div>
+                <div style="font-size: 9px; color:#00fff2;">NODES</div>
             </div>
         </div>
     </div>
 
     <div class="panel" style="grid-column: span 2;">
         <div class="panel-header">
-            <span>Live Topology Map</span>
-            <button onclick="openMapModal()" style="background:none; border:none; color:var(--color-blue); cursor:pointer; font-size:11px;">
-                <i class="fa-solid fa-expand"></i> FULL SCREEN
+            <span><i class="fa-solid fa-globe"></i> GEO-TOPOLOGY</span>
+            <button onclick="openMapModal()" style="background:none; border:none; color:#00fff2; cursor:pointer; font-size:10px;">
+                [ EXPAND VIEW ]
             </button>
         </div>
-        <div class="panel-body" style="padding:0; background:#0f1012;">
+        <div class="panel-body" style="padding:0; background:#050505;">
             <div id="mininetwork" style="height:100%; width:100%;"></div>
         </div>
     </div>
@@ -63,94 +152,144 @@
 <div class="dashboard-grid" style="margin-top: 15px; grid-template-rows: 250px;">
 
     <div class="panel" style="grid-column: span 1;">
-        <div class="panel-header">Alert Summary</div>
+        <div class="panel-header"><i class="fa-solid fa-bell"></i> THREAT LEVELS</div>
         <div class="panel-body" style="display:flex; flex-direction:column; justify-content:space-around;">
-             <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                 <span style="color:var(--color-crit); font-weight:bold;">CRITICAL</span>
-                 <span class="badge" style="background:var(--color-crit); color:white;">{{ down }}</span>
+             <div style="background:rgba(255, 71, 87, 0.1); border-left:3px solid #ff4757; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                 <span style="color:#ff4757; font-weight:bold; font-size:12px;">CRITICAL DOWN</span>
+                 <span class="badge" style="background:#ff4757; color:white; box-shadow:0 0 10px #ff4757;">{{ down }}</span>
              </div>
-             <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                 <span style="color:var(--color-warn); font-weight:bold;">WARNING</span>
-                 <span class="badge" style="background:var(--color-warn); color:black;">0</span>
+             <div style="background:rgba(255, 165, 2, 0.1); border-left:3px solid #ffa502; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                 <span style="color:#ffa502; font-weight:bold; font-size:12px;">WARNING</span>
+                 <span class="badge" style="background:#ffa502; color:black;">0</span>
              </div>
-             <div style="display:flex; align-items:center; justify-content:space-between;">
-                 <span style="color:var(--color-good); font-weight:bold;">NORMAL</span>
-                 <span class="badge" style="background:var(--color-good); color:black;">{{ up }}</span>
+             <div style="background:rgba(46, 204, 113, 0.1); border-left:3px solid #2ecc71; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                 <span style="color:#2ecc71; font-weight:bold; font-size:12px;">OPERATIONAL</span>
+                 <span class="badge" style="background:#2ecc71; color:black;">{{ up }}</span>
              </div>
         </div>
     </div>
 
     <div class="panel" style="grid-column: span 3;">
-        <div class="panel-header">Network Traffic Flow (Mb/s)</div>
+        <div class="panel-header"><i class="fa-solid fa-wave-square"></i> LIVE BANDWIDTH FLOW</div>
         <div class="panel-body">
             <canvas id="flowChart"></canvas>
         </div>
     </div>
-
 </div>
 
-<div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-body); z-index:9999;">
-    <div style="height:50px; background:var(--bg-header); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; padding:0 20px;">
-        <span style="font-weight:bold; color:var(--color-blue);"><i class="fa-solid fa-sitemap"></i> NETWORK TOPOLOGY</span>
-        <button onclick="closeMapModal()" style="background:#ff4d4d; border:none; color:white; padding:5px 15px; border-radius:4px; cursor:pointer;">CLOSE [ESC]</button>
+<div class="ticker-wrap">
+    <div class="ticker-move">
+        <div class="ticker-item">:: SYSTEM STATUS: OPTIMAL ::</div>
+        <div class="ticker-item">:: SCANNING NODE 192.168.1.1 [OK] ::</div>
+        <div class="ticker-item">:: FIREWALL ACTIVE ::</div>
+        <div class="ticker-item" style="color:#ff4757;">:: ALERT: {{ down }} DEVICES OFFLINE ::</div>
+        <div class="ticker-item">:: DATABASE SYNC COMPLETE ::</div>
+    </div>
+</div>
+
+<div id="hud-modal" onclick="closeHUD()">
+    <div class="hud-box" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:18px; font-weight:bold;"><i class="fa-solid fa-microchip"></i> DEVICE INTEL</span>
+            <button onclick="closeHUD()" style="background:none; border:none; color:#ff4757; cursor:pointer;">[X]</button>
+        </div>
+        <div class="hud-line"></div>
+
+        <div class="hud-row"><span>NAME:</span> <span class="hud-val" id="hud-name">--</span></div>
+        <div class="hud-row"><span>IP ADDRESS:</span> <span class="hud-val" id="hud-ip" style="color:#00fff2;">--</span></div>
+        <div class="hud-row"><span>TYPE:</span> <span class="hud-val" id="hud-type">--</span></div>
+        <div class="hud-row"><span>STATUS:</span> <span class="hud-val" id="hud-status">--</span></div>
+
+        <div class="hud-line"></div>
+
+        <div style="text-align:center; margin-top:10px;">
+            <button class="btn-action" style="width:100%; border:1px solid #00fff2; background:rgba(0, 255, 242, 0.1); color:#00fff2; padding:10px;">
+                <i class="fa-solid fa-terminal"></i> INITIATE DIAGNOSTIC
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999;">
+    <div style="height:50px; background:#111; border-bottom:1px solid #00fff2; display:flex; justify-content:space-between; align-items:center; padding:0 20px;">
+        <span style="color:#00fff2; font-weight:bold;">GLOBAL TOPOLOGY</span>
+        <button onclick="closeMapModal()" style="color:#ff4757; background:none; border:1px solid #ff4757; padding:5px 15px;">CLOSE</button>
     </div>
     <div id="fullnetwork" style="width:100%; height:calc(100% - 50px);"></div>
 </div>
 
 <script>
-    // --- 1. DONUT CHART ---
+    // --- HUD LOGIC ---
+    function showHUD(name, ip, status, type) {
+        document.getElementById('hud-name').innerText = name;
+        document.getElementById('hud-ip').innerText = ip;
+        document.getElementById('hud-status').innerText = status;
+        document.getElementById('hud-type').innerText = type;
+
+        const stEl = document.getElementById('hud-status');
+        stEl.style.color = (status === 'UP') ? '#2ecc71' : '#ff4757';
+
+        document.getElementById('hud-modal').style.display = 'flex';
+    }
+    function closeHUD() {
+        document.getElementById('hud-modal').style.display = 'none';
+    }
+
+    // --- CHARTS CONFIG (Cyber Theme) ---
+    Chart.defaults.color = '#888';
+    Chart.defaults.borderColor = 'rgba(0, 255, 242, 0.1)';
+
     const ctxAvail = document.getElementById('availabilityChart').getContext('2d');
     new Chart(ctxAvail, {
         type: 'doughnut',
         data: {
-            labels: ['Up', 'Down'],
+            labels: ['UP', 'DOWN'],
             datasets: [{
                 data: [{{ up }}, {{ down }}],
-                backgroundColor: ['#2ecc71', '#ff4d4d'],
+                backgroundColor: ['#2ecc71', '#ff4757'],
                 borderWidth: 0,
-                cutout: '80%'
+                hoverOffset: 10
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
+            plugins: { legend: { display: false } },
+            cutout: '75%'
         }
     });
 
-    // --- 2. TRAFFIC CHART (Mock Data for Visual) ---
     const ctxFlow = document.getElementById('flowChart').getContext('2d');
+    const gradient = ctxFlow.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 255, 242, 0.5)');
+    gradient.addColorStop(1, 'rgba(0, 255, 242, 0)');
+
     new Chart(ctxFlow, {
         type: 'line',
         data: {
-            labels: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25', '10:30'],
+            labels: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25'],
             datasets: [{
-                label: 'Inbound',
-                data: [12, 19, 3, 5, 2, 30, 45],
-                borderColor: '#0984e3',
-                backgroundColor: 'rgba(9, 132, 227, 0.1)',
+                label: 'Inbound (Mb)',
+                data: [12, 19, 3, 5, 2, 30],
+                borderColor: '#00fff2',
+                backgroundColor: gradient,
                 fill: true,
-                tension: 0.4
-            }, {
-                label: 'Outbound',
-                data: [5, 10, 15, 20, 10, 5, 15],
-                borderColor: '#feca57',
-                borderDash: [5, 5],
-                tension: 0.4
+                tension: 0.4,
+                pointBackgroundColor: '#000',
+                pointBorderColor: '#00fff2'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { grid: { color: '#2c3038' } },
-                y: { grid: { color: '#2c3038' } }
-            },
-            plugins: { legend: { labels: { color: '#8b92a1' } } }
+                y: { grid: { color: 'rgba(0, 255, 242, 0.1)' } },
+                x: { grid: { display: false } }
+            }
         }
     });
 
-    // --- 3. MAP LOGIC (Vis.js) ---
+    // --- MAP LOGIC ---
     function loadMap(containerId) {
         fetch('/api/topology')
         .then(response => response.json())
@@ -158,27 +297,23 @@
             var container = document.getElementById(containerId);
             var options = {
                 nodes: {
-                    shape: 'dot',
-                    size: 20,
-                    font: { color: '#fff', size: 12, face: 'Roboto' },
-                    borderWidth: 2,
-                    shadow: true
+                    shape: 'dot', size: 15,
+                    font: { color: '#00fff2', face: 'monospace' },
+                    borderWidth: 2, color: { border: '#00fff2', background: '#000' }
                 },
-                // Define Groups for Icons
-                groups: {
-                    SWITCH: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf6ff', size: 30, color: '#0984e3', weight: 'bold' } },
-                    ROUTER: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf233', size: 30, color: '#e67e22', weight: 'bold' } },
-                    SERVER: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf0c0', size: 30, color: '#2ecc71', weight: 'bold' } },
-                    OLT:    { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf1eb', size: 30, color: '#9b59b6', weight: 'bold' } }
-                },
-                edges: { color: '#636e72', width: 2, smooth: { type: 'dynamic' } },
+                edges: { color: '#005555', width: 1, smooth: { type: 'continuous' } },
                 physics: { stabilization: false },
-                layout: { randomSeed: 2 }
+                groups: {
+                    SWITCH: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf6ff', size: 30, color: '#00fff2' } },
+                    ROUTER: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf233', size: 30, color: '#e67e22' } },
+                    SERVER: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf0c0', size: 30, color: '#2ecc71' } }
+                }
             };
 
-            // Assign default group if missing
             data.nodes = data.nodes.map(n => {
                 n.group = n.group || 'SWITCH';
+                // Color override for offline
+                if(n.status === 'DOWN') { n.icon = { color: '#ff4757' }; }
                 return n;
             });
 
@@ -186,10 +321,8 @@
         });
     }
 
-    // Load Mini Map
     loadMap('mininetwork');
 
-    // Full Screen Logic
     function openMapModal() {
         document.getElementById('map-modal').style.display = 'block';
         loadMap('fullnetwork');
@@ -197,11 +330,6 @@
     function closeMapModal() {
         document.getElementById('map-modal').style.display = 'none';
     }
-
-    // Esc Key Listener
-    document.addEventListener('keydown', function(event) {
-        if (event.key === "Escape") closeMapModal();
-    });
 </script>
 
 {% endblock %}
