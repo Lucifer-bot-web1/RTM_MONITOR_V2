@@ -9,131 +9,114 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 
 <style>
-    /* --- THEME: NETWORK OPS --- */
+    /* --- THEME: DEEP SPACE --- */
     :root {
-        --bg-core: #050505;
-        --bg-panel: rgba(10, 12, 16, 0.95);
-        --border-color: rgba(0, 255, 242, 0.2);
-        --accent-cyan: #00fff2;
+        --bg-core: #0b0e14;
+        --bg-panel: rgba(15, 20, 28, 0.9);
+        --border-cyan: rgba(0, 255, 242, 0.3);
         --text-mono: 'Courier New', monospace;
     }
 
-    #topology-bg {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-        background: var(--bg-core);
+    body {
+        background-color: var(--bg-core);
+        background-image: radial-gradient(circle at center, #1a1f29 0%, #050505 100%);
+        color: #e0e6ed;
+        font-family: 'Roboto', sans-serif;
     }
 
-    /* --- WIDGET STYLES --- */
+    #particles-js {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+    }
+
+    /* --- WIDGETS --- */
     .grid-stack-item-content {
         background: var(--bg-panel);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        display: flex; flex-direction: column; overflow: hidden;
+        border: 1px solid var(--border-cyan);
+        border-radius: 6px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        display: flex; flex-direction: column;
     }
 
     .widget-header {
         padding: 8px 12px;
         background: rgba(0, 255, 242, 0.05);
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-cyan);
         display: flex; justify-content: space-between; align-items: center;
-        cursor: grab; user-select: none;
+        cursor: grab;
     }
-    .widget-title { font-size: 11px; font-weight: bold; color: var(--accent-cyan); letter-spacing: 1px; }
+    .widget-title { font-size: 11px; font-weight: bold; color: #00fff2; letter-spacing: 1px; }
+    .widget-body { flex: 1; padding: 10px; overflow: hidden; position: relative; }
 
-    .widget-body {
-        flex: 1; padding: 10px; overflow: hidden; position: relative;
-    }
-
-    /* --- TERMINAL --- */
-    .terminal-container {
-        display: flex; flex-direction: column; height: 100%;
-        background: #000; font-family: var(--text-mono);
-    }
-    .term-controls {
-        padding: 8px; border-bottom: 1px solid #333; display: flex; gap: 8px;
-        background: #111;
-    }
-    .term-input {
-        background: #000; border: 1px solid #444; color: #00fff2;
-        padding: 4px 8px; flex: 1; font-family: inherit; font-size: 12px;
-    }
-    .term-btn {
-        background: #222; color: white; border: 1px solid #444;
-        padding: 4px 12px; cursor: pointer; font-size: 10px; font-weight: bold;
-    }
-    .term-btn:hover { background: var(--accent-cyan); color: black; }
-
-    .term-output {
-        flex: 1; overflow-y: auto; padding: 10px; color: #ccc; font-size: 11px;
-        display: flex; flex-direction: column; gap: 2px;
-    }
-    .line-reply { color: #2ecc71; }
-    .line-error { color: #ff4757; }
-
-    /* --- CLICKABLE STATUS CARDS --- */
+    /* --- REAL STATUS CARDS --- */
     .status-card {
-        display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0 10px;
-        cursor: pointer; transition: 0.2s;
+        display: flex; align-items: center; justify-content: space-between;
+        height: 100%; padding: 0 15px; cursor: pointer; transition: 0.3s;
     }
-    .status-card:hover { background: rgba(0, 255, 242, 0.05); }
-
-    .val-huge { font-size: 32px; font-weight: bold; color: white; }
+    .status-card:hover { background: rgba(255,255,255,0.05); }
+    .val-huge { font-size: 36px; font-weight: bold; color: white; }
     .blink-red { animation: blink 1s infinite; color: #ff4757; }
     @keyframes blink { 50% { opacity: 0.5; } }
 
-    /* --- POPUP MODAL (LIST) --- */
-    .modal-overlay {
-        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.8); z-index: 9999; backdrop-filter: blur(5px);
-        align-items: center; justify-content: center;
-    }
-    .modal-box {
-        width: 500px; background: #0b0c0e; border: 1px solid var(--accent-cyan);
-        box-shadow: 0 0 30px rgba(0, 255, 242, 0.2); border-radius: 4px;
-        display: flex; flex-direction: column;
-    }
-    .modal-header {
-        padding: 15px; border-bottom: 1px solid #333;
-        display: flex; justify-content: space-between; align-items: center;
-        background: rgba(0, 255, 242, 0.05);
-    }
-    .modal-title { color: var(--accent-cyan); font-weight: bold; letter-spacing: 1px; }
-    .modal-close { background: none; border: none; color: #ff4757; cursor: pointer; font-size: 16px; }
+    /* --- TERMINAL --- */
+    .term-container { display: flex; flex-direction: column; height: 100%; background: #000; font-family: var(--text-mono); }
+    .term-head { padding: 5px; background: #111; border-bottom: 1px solid #333; display: flex; gap: 5px; }
+    .term-input { background: #000; border: 1px solid #333; color: #00fff2; flex: 1; padding: 4px; }
+    .term-btn { background: #222; border: 1px solid #444; color: white; cursor: pointer; padding: 2px 10px; font-size: 10px; }
+    .term-out { flex: 1; overflow-y: auto; padding: 10px; font-size: 11px; color: #ccc; }
 
-    /* SCROLLABLE LIST */
-    .modal-body {
-        max-height: 400px; /* Limits height */
-        overflow-y: auto;  /* Enables scroll */
-        padding: 10px;
-    }
-    .device-item {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 10px; border-bottom: 1px solid #222; color: #ccc; font-size: 12px; font-family: var(--text-mono);
-    }
-    .device-item:hover { background: #151515; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    /* --- LIVE LOGS --- */
+    .log-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+    .log-table th { text-align: left; color: #888; border-bottom: 1px solid #333; padding: 5px; position: sticky; top: 0; background: var(--bg-panel); }
+    .log-table td { padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .badge { padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; }
+    .bg-green { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+    .bg-red { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+
+    /* New Log Flash */
+    .log-flash { animation: flash-log 1s ease-out; }
+    @keyframes flash-log { 0% { background: rgba(0, 255, 242, 0.2); } 100% { background: transparent; } }
+
+    /* --- MODAL --- */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center; }
+    .modal-box { width: 500px; background: #0b0c0e; border: 1px solid #00fff2; border-radius: 5px; display: flex; flex-direction: column; }
+    .modal-head { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+    .modal-body { max-height: 400px; overflow-y: auto; padding: 10px; }
+    .list-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-family: var(--text-mono); font-size: 12px; }
 
 </style>
 
-<div id="topology-bg"></div>
+<div id="particles-js"></div>
 
-<div style="padding: 10px 20px; background: rgba(0,0,0,0.8); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-    <div style="color: var(--accent-cyan); font-weight: bold; font-family: var(--text-mono);">
-        <i class="fa-solid fa-network-wired"></i> RTM OPERATIONS CENTER
+<audio id="alertAudio" src="{{ url_for('static', filename='sounds/custom_alert.mp3') }}" preload="auto"></audio>
+<input type="file" id="soundInput" style="display: none;" accept=".mp3,.wav" onchange="uploadSound(this)">
+
+<div style="padding: 10px 20px; background: rgba(0,0,0,0.5); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+    <div style="color: #00fff2; font-weight: bold; font-family: var(--text-mono); letter-spacing: 1px;">
+        <i class="fa-solid fa-server"></i> RTM OPERATIONS CENTER
     </div>
-    <button onclick="saveLayout()" class="term-btn"><i class="fa-solid fa-save"></i> SAVE LAYOUT</button>
+    <div style="display: flex; gap: 10px;">
+        <button onclick="document.getElementById('soundInput').click()" class="term-btn" style="border-color:#e67e22; color:#e67e22;">
+            <i class="fa-solid fa-music"></i> SET ALERT SOUND
+        </button>
+        <button onclick="window.location.reload()" class="term-btn" style="border-color:#00fff2;">
+            <i class="fa-solid fa-rotate"></i> REFRESH
+        </button>
+        <button onclick="saveLayout()" class="term-btn">
+            <i class="fa-solid fa-floppy-disk"></i> SAVE LAYOUT
+        </button>
+    </div>
 </div>
 
 <div class="grid-stack">
 
     <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="3" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">ACTIVE NODES</span><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="widget-header"><span class="widget-title">ONLINE NODES</span></div>
             <div class="widget-body" style="padding:0;">
-                <div class="status-card" onclick="openDeviceList('UP')">
-                    <div><div class="val-huge" style="color:#2ecc71;">{{ up }}</div><div style="font-size:9px; color:#888;">OPERATIONAL (CLICK TO VIEW)</div></div>
-                    <i class="fa-solid fa-wifi" style="font-size:24px; color:#2ecc71;"></i>
+                <div class="status-card" onclick="openModal('UP')">
+                    <div><div class="val-huge" style="color:#2ecc71;">{{ up }}</div><div style="font-size:10px; color:#888;">OPERATIONAL</div></div>
+                    <i class="fa-solid fa-wifi" style="font-size:28px; color:#2ecc71;"></i>
                 </div>
             </div>
         </div>
@@ -141,49 +124,61 @@
 
     <div class="grid-stack-item" gs-x="3" gs-y="0" gs-w="3" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">CRITICAL ALERTS</span><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="widget-header"><span class="widget-title">CRITICAL</span></div>
             <div class="widget-body" style="padding:0;">
-                <div class="status-card" onclick="openDeviceList('DOWN')">
-                    <div><div class="val-huge blink-red">{{ down }}</div><div style="font-size:9px; color:#888;">OFFLINE (CLICK TO VIEW)</div></div>
-                    <i class="fa-solid fa-triangle-exclamation" style="font-size:24px; color:#ff4757;"></i>
+                <div class="status-card" onclick="openModal('DOWN')">
+                    <div><div class="val-huge blink-red">{{ down }}</div><div style="font-size:10px; color:#888;">OFFLINE</div></div>
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size:28px; color:#ff4757;"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="6" gs-h="3">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">LIVE TRAFFIC FLOW</span><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="widget-header"><span class="widget-title">REAL-TIME TRAFFIC (Mbps)</span></div>
             <div class="widget-body">
                 <canvas id="trafficChart"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-x="0" gs-y="2" gs-w="6" gs-h="5">
+    <div class="grid-stack-item" gs-x="0" gs-y="2" gs-w="6" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title"> >_ DIAGNOSTIC TERMINAL</span><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="widget-header"><span class="widget-title">SERVER HEALTH (CPU / RAM)</span></div>
+            <div class="widget-body">
+                <canvas id="resourceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-stack-item" gs-x="0" gs-y="4" gs-w="6" gs-h="4">
+        <div class="grid-stack-item-content">
+            <div class="widget-header"><span class="widget-title">>_ ROOT TERMINAL</span></div>
             <div class="widget-body" style="padding:0;">
-                <div class="terminal-container">
-                    <div class="term-controls">
-                        <span style="color:#2ecc71; font-size:12px; padding-top:2px;">$</span>
-                        <input type="text" id="pingIP" class="term-input" placeholder="Enter IP (e.g. 192.168.1.1)">
-                        <button class="term-btn" onclick="startRealPing()" style="border-color:#2ecc71; color:#2ecc71;">▶ PING</button>
-                        <button class="term-btn" onclick="stopRealPing()" style="border-color:#ff4757; color:#ff4757;">⏹ STOP</button>
+                <div class="term-container">
+                    <div class="term-head">
+                        <input id="pingIP" class="term-input" placeholder="IP Address">
+                        <button onclick="startPing()" class="term-btn">PING</button>
+                        <button onclick="stopPing()" class="term-btn stop">STOP</button>
                     </div>
-                    <div id="termOutput" class="term-output">
-                        <div style="color:#666;">// Console Initialized...</div>
+                    <div id="termOut" class="term-out">
+                        <div>// System Ready...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-x="6" gs-y="4" gs-w="6" gs-h="3">
+    <div class="grid-stack-item" gs-x="6" gs-y="3" gs-w="6" gs-h="5">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">NETWORK MAP</span><i class="fa-solid fa-grip-lines"></i></div>
-            <div class="widget-body" style="padding:0; background:#000;">
-                <div id="mininetwork" style="width:100%; height:100%;"></div>
+            <div class="widget-header"><span class="widget-title">LIVE EVENT LOGS</span></div>
+            <div class="widget-body" style="padding:0; overflow-y:auto;">
+                <table class="log-table" id="logTable">
+                    <thead><tr><th>TIME</th><th>DEVICE</th><th>STATUS</th><th>MSG</th></tr></thead>
+                    <tbody>
+                        </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -192,154 +187,141 @@
 
 <div id="listModal" class="modal-overlay">
     <div class="modal-box">
-        <div class="modal-header">
-            <span id="modalTitle" class="modal-title">DEVICE LIST</span>
-            <button onclick="closeModal()" class="modal-close"><i class="fa-solid fa-times"></i></button>
+        <div class="modal-head">
+            <span id="modalTitle" style="color:#00fff2; font-weight:bold;">DETAILS</span>
+            <button onclick="document.getElementById('listModal').style.display='none'" style="background:none; border:none; color:#ff4757;">X</button>
         </div>
-        <div id="modalList" class="modal-body">
-            </div>
+        <div id="modalList" class="modal-body"></div>
     </div>
 </div>
 
 <script>
-    // --- 0. DATA PREPARATION (From Jinja to JS) ---
-    const allDevices = [
-        {% for d in devices %}
-        { name: "{{d.name}}", ip: "{{d.ip}}", state: "{{d.state}}", type: "{{d.device_type}}" },
-        {% endfor %}
-    ];
+    // --- INIT ---
+    var grid = GridStack.init({ column: 12, cellHeight: 60, margin: 8, animate: true, float: true });
+    function saveLayout() { alert("Layout Configuration Saved!"); }
 
-    // --- 1. POPUP LOGIC ---
-    function openDeviceList(filterState) {
-        const modal = document.getElementById('listModal');
-        const listContainer = document.getElementById('modalList');
-        const title = document.getElementById('modalTitle');
-
-        // Clear previous
-        listContainer.innerHTML = "";
-
-        // Filter Data
-        const filtered = allDevices.filter(d => d.state === filterState);
-
-        title.innerText = (filterState === 'UP') ? `ACTIVE NODES (${filtered.length})` : `CRITICAL ALERTS (${filtered.length})`;
-        title.style.color = (filterState === 'UP') ? '#2ecc71' : '#ff4757';
-
-        if (filtered.length === 0) {
-            listContainer.innerHTML = "<div style='padding:20px; text-align:center; color:#666;'>No devices found in this state.</div>";
-        } else {
-            filtered.forEach(d => {
-                const color = (d.state === 'UP') ? '#2ecc71' : '#ff4757';
-                const item = `
-                    <div class="device-item">
-                        <div style="display:flex; align-items:center;">
-                            <span class="status-dot" style="background:${color}"></span>
-                            <span style="font-weight:bold; margin-right:10px;">${d.name}</span>
-                            <span style="color:#666;">[${d.type}]</span>
-                        </div>
-                        <span style="color:#00fff2;">${d.ip}</span>
-                    </div>
-                `;
-                listContainer.innerHTML += item;
-            });
-        }
-
-        modal.style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('listModal').style.display = 'none';
-    }
-
-    // --- 2. GRID INIT ---
-    var grid = GridStack.init({ column: 12, cellHeight: 60, margin: 8, animate: true });
-    function saveLayout() { alert("Layout Saved!"); }
-
-    // --- 3. SMART GRAPH (LIVE SIMULATION) ---
-    const ctx = document.getElementById('trafficChart').getContext('2d');
-
-    // Initial Data
-    const initialData = {
-        labels: Array(10).fill(''),
-        datasets: [{
-            label: 'Traffic (Mb/s)',
-            data: Array(10).fill(0),
-            borderColor: '#00fff2',
-            backgroundColor: 'rgba(0, 255, 242, 0.1)',
-            fill: true, tension: 0.4
-        }]
-    };
-
-    const smartChart = new Chart(ctx, {
-        type: 'line',
-        data: initialData,
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            animation: { duration: 0 }, // Disable animation for live performance
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { display: false },
-                y: { grid: { color: '#222' }, min: 0, max: 100 }
-            }
-        }
+    // --- PARTICLES ---
+    particlesJS("particles-js", {
+        "particles": { "number": { "value": 40 }, "color": { "value": "#00fff2" }, "opacity": { "value": 0.1 }, "size": { "value": 2 }, "line_linked": { "enable": true, "opacity": 0.05 } }
     });
 
-    // Live Update Loop
-    setInterval(() => {
-        const data = smartChart.data.datasets[0].data;
-        const labels = smartChart.data.labels;
-
-        // Remove first
-        data.shift();
-
-        // Add new random value (Simulate Traffic)
-        const val = Math.floor(Math.random() * 60) + 20;
-        data.push(val);
-
-        smartChart.update();
-    }, 1000);
-
-    // --- 4. REAL PING & SOCKET ---
+    // --- SOCKET.IO ---
     const socket = io();
-    const outputDiv = document.getElementById('termOutput');
 
-    function startRealPing() {
-        const ip = document.getElementById('pingIP').value;
-        if(!ip) return;
-        outputDiv.innerHTML += `<div class="line-info" style="color:#f1c40f;">> Pinging ${ip}...</div>`;
-        socket.emit('start_ping', { ip: ip });
-    }
-    function stopRealPing() { socket.emit('stop_ping'); }
-
-    socket.on('ping_output', function(data) {
-        const line = data.line;
-        let color = '#ccc';
-        if (line.includes('Reply')) color = '#2ecc71';
-        else if (line.includes('out') || line.includes('error')) color = '#ff4757';
-
-        const div = document.createElement('div');
-        div.style.color = color;
-        div.innerText = line;
-        outputDiv.appendChild(div);
-        outputDiv.scrollTop = outputDiv.scrollHeight;
+    // --- 1. TRAFFIC CHART (REAL) ---
+    const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
+    const trafficChart = new Chart(ctxTraffic, {
+        type: 'line',
+        data: { labels: Array(20).fill(''), datasets: [
+            { label: 'TX (Up)', data: Array(20).fill(0), borderColor: '#00fff2', borderWidth: 1, fill: false },
+            { label: 'RX (Down)', data: Array(20).fill(0), borderColor: '#4070f4', borderWidth: 1, fill: false }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: {display:false}, y: {grid:{color:'#222'}} } }
     });
 
-    // --- 5. TOPOLOGY MAP ---
-    function loadMap() {
-        fetch('/api/topology').then(r => r.json()).then(data => {
-            var container = document.getElementById('mininetwork');
-            var options = {
-                nodes: { shape: 'dot', size: 12, font: { color: '#fff', size:10 }, borderWidth: 1 },
-                edges: { color: '#005555', width: 1 },
-                groups: { SWITCH: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf6ff', size: 20, color: '#00fff2' } } }
-            };
-            new vis.Network(container, data, options);
+    // --- 2. RESOURCE CHART (REAL CPU/RAM) ---
+    const ctxRes = document.getElementById('resourceChart').getContext('2d');
+    const resChart = new Chart(ctxRes, {
+        type: 'line',
+        data: { labels: Array(20).fill(''), datasets: [
+            { label: 'CPU %', data: Array(20).fill(0), borderColor: '#ff9f43', borderWidth: 1, fill: true, backgroundColor: 'rgba(255, 159, 67, 0.1)' },
+            { label: 'RAM %', data: Array(20).fill(0), borderColor: '#2ecc71', borderWidth: 1, fill: true, backgroundColor: 'rgba(46, 204, 113, 0.1)' }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: {display:false}, y: {min:0, max:100, grid:{color:'#222'}} } }
+    });
+
+    // --- LISTEN FOR REAL METRICS ---
+    socket.on('system_stats', (data) => {
+        // Update Traffic
+        trafficChart.data.datasets[0].data.shift(); trafficChart.data.datasets[0].data.push(data.tx);
+        trafficChart.data.datasets[1].data.shift(); trafficChart.data.datasets[1].data.push(data.rx);
+        trafficChart.update();
+
+        // Update CPU/RAM
+        resChart.data.datasets[0].data.shift(); resChart.data.datasets[0].data.push(data.cpu);
+        resChart.data.datasets[1].data.shift(); resChart.data.datasets[1].data.push(data.ram);
+        resChart.update();
+    });
+
+    // --- 3. TERMINAL & LOGS ---
+    const termOut = document.getElementById('termOut');
+    const logTable = document.getElementById('logTable').getElementsByTagName('tbody')[0];
+
+    function startPing() {
+        const ip = document.getElementById('pingIP').value;
+        if(ip) {
+            termOut.innerHTML += `<div style="color:#f1c40f">> Pinging ${ip}...</div>`;
+            socket.emit('start_ping', {ip: ip});
+        }
+    }
+    function stopPing() { socket.emit('stop_ping'); }
+
+    socket.on('ping_output', (data) => {
+        const div = document.createElement('div');
+        div.innerText = data.line;
+        div.style.color = data.line.includes('Reply') ? '#2ecc71' : '#ccc';
+        if(data.line.includes('out') || data.line.includes('error')) div.style.color = '#ff4757';
+        termOut.appendChild(div);
+        termOut.scrollTop = termOut.scrollHeight;
+    });
+
+    // Live Log Update
+    socket.on('log_update', (data) => {
+        const row = logTable.insertRow(0);
+        row.classList.add('log-flash');
+        const color = data.status === 'UP' ? 'bg-green' : 'bg-red';
+        row.innerHTML = `
+            <td>${data.time}</td>
+            <td>${data.device}</td>
+            <td><span class="badge ${color}">${data.status}</span></td>
+            <td>${data.msg}</td>
+        `;
+        if(logTable.rows.length > 50) logTable.deleteRow(50); // Keep last 50
+    });
+
+    // --- 4. POPUP LOGIC ---
+    const allDevices = [
+        {% for d in devices %} {name:"{{d.name}}", ip:"{{d.ip}}", state:"{{d.state}}"}, {% endfor %}
+    ];
+    function openModal(state) {
+        const list = document.getElementById('modalList');
+        list.innerHTML = '';
+        const filtered = allDevices.filter(d => d.state === state);
+        if(filtered.length === 0) list.innerHTML = '<div style="padding:10px; color:#666;">No devices found.</div>';
+
+        filtered.forEach(d => {
+            list.innerHTML += `
+                <div class="list-item">
+                    <span><b>${d.name}</b> (${d.ip})</span>
+                    <span style="color:${state==='UP'?'#2ecc71':'#ff4757'}">${d.state}</span>
+                </div>`;
+        });
+        document.getElementById('listModal').style.display = 'flex';
+    }
+
+    // --- 5. SOUND UPLOAD & ALERT ---
+    function uploadSound(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/upload_sound', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            if(data.success) {
+                // Reload audio src to fetch new file
+                const audio = document.getElementById('alertAudio');
+                audio.src = audio.src.split('?')[0] + '?t=' + new Date().getTime();
+            }
         });
     }
-    setTimeout(loadMap, 500);
 
-    // --- 6. BACKGROUND ---
-    particlesJS("topology-bg", {
-        "particles": { "number": { "value": 50 }, "color": { "value": "#00fff2" }, "opacity": { "value": 0.2 }, "size": { "value": 2 }, "line_linked": { "enable": true, "color": "#00fff2", "opacity": 0.1 } }
+    // Play sound on Critical Alert (from Backend)
+    socket.on('incident_down', (data) => {
+        const audio = document.getElementById('alertAudio');
+        audio.play().catch(e => console.log("Audio play blocked: Interaction needed"));
     });
 
 </script>
