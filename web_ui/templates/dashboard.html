@@ -5,144 +5,135 @@
 <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 
 <style>
-    /* --- THEME: DIGITAL FIBER (Dark Navy & Data) --- */
+    /* --- THEME: NETWORK OPS --- */
     :root {
-        --bg-core: #0b1021;
-        --bg-panel: rgba(13, 17, 34, 0.85);
-        --border-color: rgba(64, 112, 244, 0.3);
-        --accent-cyan: #00f2ff;
-        --accent-blue: #4070f4;
-        --text-mono: 'JetBrains Mono', 'Courier New', monospace;
+        --bg-core: #050505;
+        --bg-panel: rgba(10, 12, 16, 0.95);
+        --border-color: rgba(0, 255, 242, 0.2);
+        --accent-cyan: #00fff2;
+        --text-mono: 'Courier New', monospace;
     }
 
-    body {
-        background-color: var(--bg-core);
-        background-image:
-            radial-gradient(circle at 50% 50%, rgba(64, 112, 244, 0.05) 0%, transparent 50%),
-            linear-gradient(0deg, rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-        background-size: 100% 100%, 40px 40px, 40px 40px;
-        color: #e0e6ed;
-        font-family: 'Roboto', sans-serif;
+    #topology-bg {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+        background: var(--bg-core);
     }
 
-    /* --- GRIDSTACK (DRAGGABLE WIDGETS) --- */
+    /* --- WIDGET STYLES --- */
     .grid-stack-item-content {
         background: var(--bg-panel);
         border: 1px solid var(--border-color);
-        backdrop-filter: blur(10px);
-        border-radius: 6px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
+        border-radius: 4px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; overflow: hidden;
     }
 
-    /* Glowing Top Border for Professional Look */
-    .grid-stack-item-content::before {
-        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-        background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
-        opacity: 0.7;
-    }
-
-    /* WIDGET HEADER (Drag Handle) */
     .widget-header {
-        padding: 10px 15px;
-        background: rgba(0, 0, 0, 0.3);
+        padding: 8px 12px;
+        background: rgba(0, 255, 242, 0.05);
         border-bottom: 1px solid var(--border-color);
         display: flex; justify-content: space-between; align-items: center;
-        cursor: grab; /* Shows it's draggable */
-        user-select: none;
+        cursor: grab; user-select: none;
     }
-    .widget-header:active { cursor: grabbing; }
-
-    .widget-title {
-        font-family: var(--text-mono);
-        font-size: 12px; font-weight: bold; color: var(--accent-cyan);
-        text-transform: uppercase; letter-spacing: 1px;
-    }
+    .widget-title { font-size: 11px; font-weight: bold; color: var(--accent-cyan); letter-spacing: 1px; }
 
     .widget-body {
-        flex: 1; padding: 15px; overflow: auto; position: relative;
+        flex: 1; padding: 10px; overflow: hidden; position: relative;
     }
 
-    /* --- CUSTOM SCROLLBAR --- */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #050505; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
-
-    /* --- STATUS CARDS (Big Count) --- */
-    .status-card {
-        display: flex; align-items: center; justify-content: space-between; height: 100%;
+    /* --- TERMINAL --- */
+    .terminal-container {
+        display: flex; flex-direction: column; height: 100%;
+        background: #000; font-family: var(--text-mono);
     }
-    .status-val { font-size: 36px; font-weight: bold; color: white; }
-    .status-label { font-size: 10px; color: #888; text-transform: uppercase; margin-top: 5px; }
-    .status-icon { font-size: 30px; opacity: 0.5; }
-
-    /* Blink Animation for Down Devices */
-    .blink-red { animation: blink 1.5s infinite; color: #ff4757; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-    /* --- TERMINAL (PING TOOL) --- */
-    .terminal-window {
-        background: #000; width: 100%; height: 100%;
-        font-family: var(--text-mono); font-size: 11px;
-        padding: 10px; color: #ccc; overflow-y: auto;
-        border: 1px solid #333;
+    .term-controls {
+        padding: 8px; border-bottom: 1px solid #333; display: flex; gap: 8px;
+        background: #111;
     }
-    .term-input-line { display: flex; gap: 10px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
     .term-input {
-        background: transparent; border: none; color: white;
-        font-family: var(--text-mono); flex: 1; outline: none;
+        background: #000; border: 1px solid #444; color: #00fff2;
+        padding: 4px 8px; flex: 1; font-family: inherit; font-size: 12px;
     }
     .term-btn {
-        background: #222; border: 1px solid #444; color: white;
-        padding: 2px 10px; font-size: 10px; cursor: pointer;
-        font-family: var(--text-mono);
+        background: #222; color: white; border: 1px solid #444;
+        padding: 4px 12px; cursor: pointer; font-size: 10px; font-weight: bold;
     }
-    .term-btn:hover { background: var(--accent-blue); }
-    .term-output { display: flex; flex-direction: column; gap: 2px; }
-    .log-line-success { color: #2ecc71; }
-    .log-line-error { color: #ff4757; }
+    .term-btn:hover { background: var(--accent-cyan); color: black; }
 
-    /* --- LOGS TABLE --- */
-    .log-table { width: 100%; border-collapse: collapse; font-size: 11px; font-family: var(--text-mono); }
-    .log-table th { text-align: left; color: #888; padding-bottom: 5px; border-bottom: 1px solid #333; }
-    .log-table td { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ccc; }
-    .status-badge { padding: 2px 6px; border-radius: 2px; font-size: 9px; font-weight: bold; }
-    .badge-up { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-    .badge-down { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+    .term-output {
+        flex: 1; overflow-y: auto; padding: 10px; color: #ccc; font-size: 11px;
+        display: flex; flex-direction: column; gap: 2px;
+    }
+    .line-reply { color: #2ecc71; }
+    .line-error { color: #ff4757; }
+
+    /* --- CLICKABLE STATUS CARDS --- */
+    .status-card {
+        display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0 10px;
+        cursor: pointer; transition: 0.2s;
+    }
+    .status-card:hover { background: rgba(0, 255, 242, 0.05); }
+
+    .val-huge { font-size: 32px; font-weight: bold; color: white; }
+    .blink-red { animation: blink 1s infinite; color: #ff4757; }
+    @keyframes blink { 50% { opacity: 0.5; } }
+
+    /* --- POPUP MODAL (LIST) --- */
+    .modal-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 9999; backdrop-filter: blur(5px);
+        align-items: center; justify-content: center;
+    }
+    .modal-box {
+        width: 500px; background: #0b0c0e; border: 1px solid var(--accent-cyan);
+        box-shadow: 0 0 30px rgba(0, 255, 242, 0.2); border-radius: 4px;
+        display: flex; flex-direction: column;
+    }
+    .modal-header {
+        padding: 15px; border-bottom: 1px solid #333;
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(0, 255, 242, 0.05);
+    }
+    .modal-title { color: var(--accent-cyan); font-weight: bold; letter-spacing: 1px; }
+    .modal-close { background: none; border: none; color: #ff4757; cursor: pointer; font-size: 16px; }
+
+    /* SCROLLABLE LIST */
+    .modal-body {
+        max-height: 400px; /* Limits height */
+        overflow-y: auto;  /* Enables scroll */
+        padding: 10px;
+    }
+    .device-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px; border-bottom: 1px solid #222; color: #ccc; font-size: 12px; font-family: var(--text-mono);
+    }
+    .device-item:hover { background: #151515; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
 
 </style>
 
-<div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
-    <div style="font-family: var(--text-mono); font-weight: bold; color: var(--accent-cyan);">
+<div id="topology-bg"></div>
+
+<div style="padding: 10px 20px; background: rgba(0,0,0,0.8); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+    <div style="color: var(--accent-cyan); font-weight: bold; font-family: var(--text-mono);">
         <i class="fa-solid fa-network-wired"></i> RTM OPERATIONS CENTER
     </div>
-    <div>
-        <button onclick="saveLayout()" class="term-btn"><i class="fa-solid fa-save"></i> SAVE LAYOUT</button>
-        <button onclick="location.reload()" class="term-btn"><i class="fa-solid fa-sync"></i> SYNC</button>
-    </div>
+    <button onclick="saveLayout()" class="term-btn"><i class="fa-solid fa-save"></i> SAVE LAYOUT</button>
 </div>
 
 <div class="grid-stack">
 
     <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="3" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header">
-                <span class="widget-title">ACTIVE NODES</span>
-                <i class="fa-solid fa-grip-lines" style="color:#555;"></i>
-            </div>
-            <div class="widget-body">
-                <div class="status-card">
-                    <div>
-                        <div class="status-val" style="color:#2ecc71;">{{ up }}</div>
-                        <div class="status-label">OPERATIONAL</div>
-                    </div>
-                    <i class="fa-solid fa-wifi status-icon" style="color:#2ecc71;"></i>
+            <div class="widget-header"><span class="widget-title">ACTIVE NODES</span><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="widget-body" style="padding:0;">
+                <div class="status-card" onclick="openDeviceList('UP')">
+                    <div><div class="val-huge" style="color:#2ecc71;">{{ up }}</div><div style="font-size:9px; color:#888;">OPERATIONAL (CLICK TO VIEW)</div></div>
+                    <i class="fa-solid fa-wifi" style="font-size:24px; color:#2ecc71;"></i>
                 </div>
             </div>
         </div>
@@ -150,17 +141,11 @@
 
     <div class="grid-stack-item" gs-x="3" gs-y="0" gs-w="3" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header">
-                <span class="widget-title">CRITICAL ALERTS</span>
-                <i class="fa-solid fa-grip-lines" style="color:#555;"></i>
-            </div>
-            <div class="widget-body">
-                <div class="status-card">
-                    <div>
-                        <div class="status-val blink-red">{{ down }}</div>
-                        <div class="status-label">OFFLINE / ERROR</div>
-                    </div>
-                    <i class="fa-solid fa-triangle-exclamation status-icon" style="color:#ff4757;"></i>
+            <div class="widget-header"><span class="widget-title">CRITICAL ALERTS</span><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="widget-body" style="padding:0;">
+                <div class="status-card" onclick="openDeviceList('DOWN')">
+                    <div><div class="val-huge blink-red">{{ down }}</div><div style="font-size:9px; color:#888;">OFFLINE (CLICK TO VIEW)</div></div>
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size:24px; color:#ff4757;"></i>
                 </div>
             </div>
         </div>
@@ -168,10 +153,7 @@
 
     <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="6" gs-h="4">
         <div class="grid-stack-item-content">
-            <div class="widget-header">
-                <span class="widget-title">NETWORK TRAFFIC (I/O)</span>
-                <i class="fa-solid fa-grip-lines" style="color:#555;"></i>
-            </div>
+            <div class="widget-header"><span class="widget-title">LIVE TRAFFIC FLOW</span><i class="fa-solid fa-grip-lines"></i></div>
             <div class="widget-body">
                 <canvas id="trafficChart"></canvas>
             </div>
@@ -180,21 +162,17 @@
 
     <div class="grid-stack-item" gs-x="0" gs-y="2" gs-w="6" gs-h="5">
         <div class="grid-stack-item-content">
-            <div class="widget-header">
-                <span class="widget-title">>_ DIAGNOSTIC TERMINAL</span>
-                <i class="fa-solid fa-grip-lines" style="color:#555;"></i>
-            </div>
+            <div class="widget-header"><span class="widget-title"> >_ DIAGNOSTIC TERMINAL</span><i class="fa-solid fa-grip-lines"></i></div>
             <div class="widget-body" style="padding:0;">
-                <div class="terminal-window">
-                    <div class="term-input-line">
-                        <span style="color:#2ecc71;">root@rtm:~#</span>
-                        <input type="text" id="pingTarget" class="term-input" placeholder="ping 192.168.1.1" value="ping ">
-                        <button class="term-btn" onclick="startPing()" style="color:#2ecc71;">▶ RUN</button>
-                        <button class="term-btn" onclick="stopPing()" style="color:#ff4757;">⏹ KILL</button>
+                <div class="terminal-container">
+                    <div class="term-controls">
+                        <span style="color:#2ecc71; font-size:12px; padding-top:2px;">$</span>
+                        <input type="text" id="pingIP" class="term-input" placeholder="Enter IP (e.g. 192.168.1.1)">
+                        <button class="term-btn" onclick="startRealPing()" style="border-color:#2ecc71; color:#2ecc71;">▶ PING</button>
+                        <button class="term-btn" onclick="stopRealPing()" style="border-color:#ff4757; color:#ff4757;">⏹ STOP</button>
                     </div>
                     <div id="termOutput" class="term-output">
-                        <div>RTM Console v2.5.0 initialized...</div>
-                        <div>Ready for commands.</div>
+                        <div style="color:#666;">// Console Initialized...</div>
                     </div>
                 </div>
             </div>
@@ -203,131 +181,167 @@
 
     <div class="grid-stack-item" gs-x="6" gs-y="4" gs-w="6" gs-h="3">
         <div class="grid-stack-item-content">
-            <div class="widget-header">
-                <span class="widget-title">EVENT LOGS</span>
-                <i class="fa-solid fa-grip-lines" style="color:#555;"></i>
-            </div>
-            <div class="widget-body">
-                <table class="log-table">
-                    <thead>
-                        <tr>
-                            <th>TIME</th>
-                            <th>DEVICE</th>
-                            <th>STATUS</th>
-                            <th>MESSAGE</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>10:42:05</td>
-                            <td>Switch-Core-01</td>
-                            <td><span class="status-badge badge-up">UP</span></td>
-                            <td>Connection restored</td>
-                        </tr>
-                        <tr>
-                            <td>10:41:12</td>
-                            <td>Server-DB-02</td>
-                            <td><span class="status-badge badge-down">DOWN</span></td>
-                            <td>Request timed out (Packets: 0)</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="widget-header"><span class="widget-title">NETWORK MAP</span><i class="fa-solid fa-grip-lines"></i></div>
+            <div class="widget-body" style="padding:0; background:#000;">
+                <div id="mininetwork" style="width:100%; height:100%;"></div>
             </div>
         </div>
     </div>
 
 </div>
 
-<script>
-    // --- 1. INIT GRIDSTACK (Draggable & Resizable) ---
-    var grid = GridStack.init({
-        column: 12,
-        cellHeight: 70,
-        margin: 10,
-        animate: true,
-        disableOneColumnMode: true, // Keep grid on mobile
-        float: true
-    });
+<div id="listModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span id="modalTitle" class="modal-title">DEVICE LIST</span>
+            <button onclick="closeModal()" class="modal-close"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div id="modalList" class="modal-body">
+            </div>
+    </div>
+</div>
 
-    function saveLayout() {
-        // Logic to save layout to LocalStorage or DB
-        alert("Layout configuration saved locally.");
+<script>
+    // --- 0. DATA PREPARATION (From Jinja to JS) ---
+    const allDevices = [
+        {% for d in devices %}
+        { name: "{{d.name}}", ip: "{{d.ip}}", state: "{{d.state}}", type: "{{d.device_type}}" },
+        {% endfor %}
+    ];
+
+    // --- 1. POPUP LOGIC ---
+    function openDeviceList(filterState) {
+        const modal = document.getElementById('listModal');
+        const listContainer = document.getElementById('modalList');
+        const title = document.getElementById('modalTitle');
+
+        // Clear previous
+        listContainer.innerHTML = "";
+
+        // Filter Data
+        const filtered = allDevices.filter(d => d.state === filterState);
+
+        title.innerText = (filterState === 'UP') ? `ACTIVE NODES (${filtered.length})` : `CRITICAL ALERTS (${filtered.length})`;
+        title.style.color = (filterState === 'UP') ? '#2ecc71' : '#ff4757';
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = "<div style='padding:20px; text-align:center; color:#666;'>No devices found in this state.</div>";
+        } else {
+            filtered.forEach(d => {
+                const color = (d.state === 'UP') ? '#2ecc71' : '#ff4757';
+                const item = `
+                    <div class="device-item">
+                        <div style="display:flex; align-items:center;">
+                            <span class="status-dot" style="background:${color}"></span>
+                            <span style="font-weight:bold; margin-right:10px;">${d.name}</span>
+                            <span style="color:#666;">[${d.type}]</span>
+                        </div>
+                        <span style="color:#00fff2;">${d.ip}</span>
+                    </div>
+                `;
+                listContainer.innerHTML += item;
+            });
+        }
+
+        modal.style.display = 'flex';
     }
 
-    // --- 2. TRAFFIC CHART CONFIG ---
+    function closeModal() {
+        document.getElementById('listModal').style.display = 'none';
+    }
+
+    // --- 2. GRID INIT ---
+    var grid = GridStack.init({ column: 12, cellHeight: 60, margin: 8, animate: true });
+    function saveLayout() { alert("Layout Saved!"); }
+
+    // --- 3. SMART GRAPH (LIVE SIMULATION) ---
     const ctx = document.getElementById('trafficChart').getContext('2d');
-    const trafficChart = new Chart(ctx, {
+
+    // Initial Data
+    const initialData = {
+        labels: Array(10).fill(''),
+        datasets: [{
+            label: 'Traffic (Mb/s)',
+            data: Array(10).fill(0),
+            borderColor: '#00fff2',
+            backgroundColor: 'rgba(0, 255, 242, 0.1)',
+            fill: true, tension: 0.4
+        }]
+    };
+
+    const smartChart = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25'],
-            datasets: [{
-                label: 'Inbound',
-                data: [12, 19, 3, 5, 2, 30],
-                borderColor: '#00f2ff',
-                backgroundColor: 'rgba(0, 242, 255, 0.1)',
-                fill: true, tension: 0.4
-            }, {
-                label: 'Outbound',
-                data: [5, 12, 10, 8, 15, 10],
-                borderColor: '#4070f4',
-                borderDash: [5, 5],
-                tension: 0.4
-            }]
-        },
+        data: initialData,
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#888', font: {family: 'monospace'} } } },
+            responsive: true, maintainAspectRatio: false,
+            animation: { duration: 0 }, // Disable animation for live performance
+            plugins: { legend: { display: false } },
             scales: {
-                x: { grid: { color: '#222' }, ticks: { color: '#666' } },
-                y: { grid: { color: '#222' }, ticks: { color: '#666' } }
+                x: { display: false },
+                y: { grid: { color: '#222' }, min: 0, max: 100 }
             }
         }
     });
 
-    // --- 3. TERMINAL SIMULATION (Front-end Logic) ---
-    let pingInterval;
+    // Live Update Loop
+    setInterval(() => {
+        const data = smartChart.data.datasets[0].data;
+        const labels = smartChart.data.labels;
 
-    function startPing() {
-        const target = document.getElementById('pingTarget').value.replace('ping ', '');
-        const output = document.getElementById('termOutput');
+        // Remove first
+        data.shift();
 
-        if(!target) return;
+        // Add new random value (Simulate Traffic)
+        const val = Math.floor(Math.random() * 60) + 20;
+        data.push(val);
 
-        // Add Start Line
-        const startLine = document.createElement('div');
-        startLine.innerText = `> Pinging ${target} with 32 bytes of data:`;
-        startLine.style.color = '#fff';
-        output.appendChild(startLine);
+        smartChart.update();
+    }, 1000);
 
-        // Simulate Loop (Real logic needs Backend Socket.IO)
-        pingInterval = setInterval(() => {
-            const line = document.createElement('div');
-            // Randomly simulate success or fail for demo
-            if(Math.random() > 0.1) {
-                const time = Math.floor(Math.random() * 10) + 1;
-                line.innerText = `Reply from ${target}: bytes=32 time=${time}ms TTL=64`;
-                line.classList.add('log-line-success');
-            } else {
-                line.innerText = `Request timed out.`;
-                line.classList.add('log-line-error');
-            }
-            output.appendChild(line);
+    // --- 4. REAL PING & SOCKET ---
+    const socket = io();
+    const outputDiv = document.getElementById('termOutput');
 
-            // Auto Scroll
-            const termWindow = document.querySelector('.terminal-window');
-            termWindow.scrollTop = termWindow.scrollHeight;
-        }, 1000);
+    function startRealPing() {
+        const ip = document.getElementById('pingIP').value;
+        if(!ip) return;
+        outputDiv.innerHTML += `<div class="line-info" style="color:#f1c40f;">> Pinging ${ip}...</div>`;
+        socket.emit('start_ping', { ip: ip });
     }
+    function stopRealPing() { socket.emit('stop_ping'); }
 
-    function stopPing() {
-        clearInterval(pingInterval);
-        const output = document.getElementById('termOutput');
-        const stopLine = document.createElement('div');
-        stopLine.innerText = `> Process terminated by user.`;
-        stopLine.style.color = '#ff9f43';
-        output.appendChild(stopLine);
+    socket.on('ping_output', function(data) {
+        const line = data.line;
+        let color = '#ccc';
+        if (line.includes('Reply')) color = '#2ecc71';
+        else if (line.includes('out') || line.includes('error')) color = '#ff4757';
+
+        const div = document.createElement('div');
+        div.style.color = color;
+        div.innerText = line;
+        outputDiv.appendChild(div);
+        outputDiv.scrollTop = outputDiv.scrollHeight;
+    });
+
+    // --- 5. TOPOLOGY MAP ---
+    function loadMap() {
+        fetch('/api/topology').then(r => r.json()).then(data => {
+            var container = document.getElementById('mininetwork');
+            var options = {
+                nodes: { shape: 'dot', size: 12, font: { color: '#fff', size:10 }, borderWidth: 1 },
+                edges: { color: '#005555', width: 1 },
+                groups: { SWITCH: { shape: 'icon', icon: { face: "'Font Awesome 6 Free'", code: '\uf6ff', size: 20, color: '#00fff2' } } }
+            };
+            new vis.Network(container, data, options);
+        });
     }
+    setTimeout(loadMap, 500);
+
+    // --- 6. BACKGROUND ---
+    particlesJS("topology-bg", {
+        "particles": { "number": { "value": 50 }, "color": { "value": "#00fff2" }, "opacity": { "value": 0.2 }, "size": { "value": 2 }, "line_linked": { "enable": true, "color": "#00fff2", "opacity": 0.1 } }
+    });
+
 </script>
 
 {% endblock %}
