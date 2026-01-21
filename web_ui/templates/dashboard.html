@@ -6,6 +6,7 @@
 <link href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 
 <style>
@@ -19,91 +20,87 @@
 
     body {
         background-color: var(--bg-core);
-        background-image: radial-gradient(circle at center, #1a1f29 0%, #050505 100%);
+        background-image: radial-gradient(circle at 50% 50%, #1a1f29 0%, #000000 100%);
         color: #e0e6ed;
         font-family: 'Roboto', sans-serif;
     }
 
-    #particles-js {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-    }
+    #particles-js { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
 
-    /* --- WIDGETS --- */
+    /* WIDGET STYLING */
     .grid-stack-item-content {
         background: var(--bg-panel);
         border: 1px solid var(--border-cyan);
         border-radius: 6px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 0 15px rgba(0, 255, 242, 0.05);
         display: flex; flex-direction: column;
     }
 
     .widget-header {
-        padding: 8px 12px;
-        background: rgba(0, 255, 242, 0.05);
+        padding: 8px 15px;
+        background: rgba(0, 255, 242, 0.08);
         border-bottom: 1px solid var(--border-cyan);
         display: flex; justify-content: space-between; align-items: center;
         cursor: grab;
     }
-    .widget-title { font-size: 11px; font-weight: bold; color: #00fff2; letter-spacing: 1px; }
-    .widget-body { flex: 1; padding: 10px; overflow: hidden; position: relative; }
+    .widget-title { font-size: 12px; font-weight: bold; color: #00fff2; letter-spacing: 1px; }
+    .widget-body { flex: 1; overflow: hidden; position: relative; padding: 5px; }
 
-    /* --- REAL STATUS CARDS --- */
+    /* STATUS CARDS */
     .status-card {
         display: flex; align-items: center; justify-content: space-between;
-        height: 100%; padding: 0 15px; cursor: pointer; transition: 0.3s;
+        height: 100%; padding: 0 20px; cursor: pointer; transition: 0.3s;
     }
     .status-card:hover { background: rgba(255,255,255,0.05); }
-    .val-huge { font-size: 36px; font-weight: bold; color: white; }
+    .val-huge { font-size: 42px; font-weight: bold; color: white; }
     .blink-red { animation: blink 1s infinite; color: #ff4757; }
     @keyframes blink { 50% { opacity: 0.5; } }
 
-    /* --- TERMINAL --- */
+    /* TERMINAL */
     .term-container { display: flex; flex-direction: column; height: 100%; background: #000; font-family: var(--text-mono); }
     .term-head { padding: 5px; background: #111; border-bottom: 1px solid #333; display: flex; gap: 5px; }
-    .term-input { background: #000; border: 1px solid #333; color: #00fff2; flex: 1; padding: 4px; }
-    .term-btn { background: #222; border: 1px solid #444; color: white; cursor: pointer; padding: 2px 10px; font-size: 10px; }
+    .term-input { background: #000; border: 1px solid #333; color: #00fff2; flex: 1; padding: 5px; }
+    .term-btn { background: #222; border: 1px solid #444; color: white; padding: 2px 10px; cursor: pointer; }
+    .term-btn:hover { background: #00fff2; color: black; }
     .term-out { flex: 1; overflow-y: auto; padding: 10px; font-size: 11px; color: #ccc; }
 
-    /* --- LIVE LOGS --- */
+    /* LOG TABLE */
     .log-table { width: 100%; font-size: 11px; border-collapse: collapse; }
     .log-table th { text-align: left; color: #888; border-bottom: 1px solid #333; padding: 5px; position: sticky; top: 0; background: var(--bg-panel); }
     .log-table td { padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .badge { padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; }
     .bg-green { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
     .bg-red { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+    .log-flash { animation: flash 1s ease-out; }
+    @keyframes flash { 0% { background: #00fff2; color:black; } 100% { background: transparent; } }
 
-    /* New Log Flash */
-    .log-flash { animation: flash-log 1s ease-out; }
-    @keyframes flash-log { 0% { background: rgba(0, 255, 242, 0.2); } 100% { background: transparent; } }
-
-    /* --- MODAL --- */
+    /* MODAL */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center; }
     .modal-box { width: 500px; background: #0b0c0e; border: 1px solid #00fff2; border-radius: 5px; display: flex; flex-direction: column; }
     .modal-head { padding: 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
     .modal-body { max-height: 400px; overflow-y: auto; padding: 10px; }
     .list-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-family: var(--text-mono); font-size: 12px; }
-
 </style>
 
 <div id="particles-js"></div>
 
-<audio id="alertAudio" src="{{ url_for('static', filename='sounds/custom_alert.mp3') }}" preload="auto"></audio>
+<audio id="alertAudio" src="{{ url_for('static', filename='sounds/custom_alert.mp3') }}"></audio>
 <input type="file" id="soundInput" style="display: none;" accept=".mp3,.wav" onchange="uploadSound(this)">
 
-<div style="padding: 10px 20px; background: rgba(0,0,0,0.5); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-    <div style="color: #00fff2; font-weight: bold; font-family: var(--text-mono); letter-spacing: 1px;">
+<div style="padding: 10px 20px; background: rgba(0,0,0,0.6); border-bottom: 1px solid rgba(0,255,242,0.1); display: flex; justify-content: space-between; align-items: center;">
+    <div style="color: #00fff2; font-weight: bold; font-family: var(--text-mono); letter-spacing: 2px;">
         <i class="fa-solid fa-server"></i> RTM OPERATIONS CENTER
     </div>
     <div style="display: flex; gap: 10px;">
         <button onclick="document.getElementById('soundInput').click()" class="term-btn" style="border-color:#e67e22; color:#e67e22;">
-            <i class="fa-solid fa-music"></i> SET ALERT SOUND
+            <i class="fa-solid fa-music"></i> ALERT SOUND
         </button>
-        <button onclick="window.location.reload()" class="term-btn" style="border-color:#00fff2;">
+        <button onclick="window.location.reload()" class="term-btn">
             <i class="fa-solid fa-rotate"></i> REFRESH
         </button>
         <button onclick="saveLayout()" class="term-btn">
-            <i class="fa-solid fa-floppy-disk"></i> SAVE LAYOUT
+            <i class="fa-solid fa-save"></i> SAVE LAYOUT
         </button>
     </div>
 </div>
@@ -112,11 +109,11 @@
 
     <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="3" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">ONLINE NODES</span></div>
+            <div class="widget-header"><span class="widget-title">ACTIVE NODES</span></div>
             <div class="widget-body" style="padding:0;">
                 <div class="status-card" onclick="openModal('UP')">
                     <div><div class="val-huge" style="color:#2ecc71;">{{ up }}</div><div style="font-size:10px; color:#888;">OPERATIONAL</div></div>
-                    <i class="fa-solid fa-wifi" style="font-size:28px; color:#2ecc71;"></i>
+                    <i class="fa-solid fa-wifi" style="font-size:32px; color:#2ecc71;"></i>
                 </div>
             </div>
         </div>
@@ -124,62 +121,66 @@
 
     <div class="grid-stack-item" gs-x="3" gs-y="0" gs-w="3" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">CRITICAL</span></div>
+            <div class="widget-header"><span class="widget-title">CRITICAL ALERTS</span></div>
             <div class="widget-body" style="padding:0;">
                 <div class="status-card" onclick="openModal('DOWN')">
                     <div><div class="val-huge blink-red">{{ down }}</div><div style="font-size:10px; color:#888;">OFFLINE</div></div>
-                    <i class="fa-solid fa-triangle-exclamation" style="font-size:28px; color:#ff4757;"></i>
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size:32px; color:#ff4757;"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="6" gs-h="3">
+    <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="6" gs-h="2">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">REAL-TIME TRAFFIC (Mbps)</span></div>
-            <div class="widget-body">
-                <canvas id="trafficChart"></canvas>
+            <div class="widget-header"><span class="widget-title">SERVER HEALTH (CPU/RAM)</span></div>
+            <div class="widget-body"><canvas id="resourceChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="grid-stack-item" gs-x="0" gs-y="2" gs-w="6" gs-h="4">
+        <div class="grid-stack-item-content">
+            <div class="widget-header"><span class="widget-title">NETWORK TOPOLOGY MAP</span></div>
+            <div class="widget-body" style="padding:0; background:#000;">
+                <div id="mynetwork" style="width:100%; height:100%;"></div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-x="0" gs-y="2" gs-w="6" gs-h="2">
+    <div class="grid-stack-item" gs-x="6" gs-y="2" gs-w="6" gs-h="4">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">SERVER HEALTH (CPU / RAM)</span></div>
-            <div class="widget-body">
-                <canvas id="resourceChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid-stack-item" gs-x="0" gs-y="4" gs-w="6" gs-h="4">
-        <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">>_ ROOT TERMINAL</span></div>
+            <div class="widget-header"><span class="widget-title">>_ DIAGNOSTIC TERMINAL</span></div>
             <div class="widget-body" style="padding:0;">
                 <div class="term-container">
                     <div class="term-head">
-                        <input id="pingIP" class="term-input" placeholder="IP Address">
+                        <input id="pingIP" class="term-input" placeholder="Enter Target IP">
                         <button onclick="startPing()" class="term-btn">PING</button>
-                        <button onclick="stopPing()" class="term-btn stop">STOP</button>
+                        <button onclick="stopPing()" class="term-btn" style="color:#ff4757;">STOP</button>
                     </div>
                     <div id="termOut" class="term-out">
-                        <div>// System Ready...</div>
+                        <div>// RTM Console Ready...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-x="6" gs-y="3" gs-w="6" gs-h="5">
+    <div class="grid-stack-item" gs-x="0" gs-y="6" gs-w="6" gs-h="3">
         <div class="grid-stack-item-content">
-            <div class="widget-header"><span class="widget-title">LIVE EVENT LOGS</span></div>
+            <div class="widget-header"><span class="widget-title">LIVE EVENT STREAM</span></div>
             <div class="widget-body" style="padding:0; overflow-y:auto;">
                 <table class="log-table" id="logTable">
                     <thead><tr><th>TIME</th><th>DEVICE</th><th>STATUS</th><th>MSG</th></tr></thead>
-                    <tbody>
-                        </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <div class="grid-stack-item" gs-x="6" gs-y="6" gs-w="6" gs-h="3">
+        <div class="grid-stack-item-content">
+            <div class="widget-header"><span class="widget-title">SERVER TRAFFIC (Mbps)</span></div>
+            <div class="widget-body"><canvas id="trafficChart"></canvas></div>
         </div>
     </div>
 
@@ -189,141 +190,132 @@
     <div class="modal-box">
         <div class="modal-head">
             <span id="modalTitle" style="color:#00fff2; font-weight:bold;">DETAILS</span>
-            <button onclick="document.getElementById('listModal').style.display='none'" style="background:none; border:none; color:#ff4757;">X</button>
+            <button onclick="document.getElementById('listModal').style.display='none'" style="color:#ff4757; background:none; border:none; font-size:16px;">X</button>
         </div>
         <div id="modalList" class="modal-body"></div>
     </div>
 </div>
 
 <script>
-    // --- INIT ---
-    var grid = GridStack.init({ column: 12, cellHeight: 60, margin: 8, animate: true, float: true });
-    function saveLayout() { alert("Layout Configuration Saved!"); }
+    // INIT
+    var grid = GridStack.init({ column: 12, cellHeight: 70, margin: 10, animate: true, float: true });
+    function saveLayout() { alert("Layout Saved!"); }
+    const socket = io();
 
-    // --- PARTICLES ---
+    // BACKGROUND
     particlesJS("particles-js", {
         "particles": { "number": { "value": 40 }, "color": { "value": "#00fff2" }, "opacity": { "value": 0.1 }, "size": { "value": 2 }, "line_linked": { "enable": true, "opacity": 0.05 } }
     });
 
-    // --- SOCKET.IO ---
-    const socket = io();
+    // 1. TOPOLOGY MAP (Real Data)
+    function loadMap() {
+        fetch('/api/topology')
+        .then(r => r.json())
+        .then(data => {
+            var container = document.getElementById('mynetwork');
+            var options = {
+                nodes: { shape: 'dot', size: 20, borderWidth: 2, font: { color: '#ffffff' } },
+                edges: { color: '#00fff2', width: 1, smooth: { type: 'continuous' } },
+                physics: { stabilization: false, barnesHut: { gravitationalConstant: -3000 } },
+                layout: { randomSeed: 2 }
+            };
+            new vis.Network(container, data, options);
+        })
+        .catch(err => console.error("Map Load Error:", err));
+    }
+    // Load map after small delay to ensure container exists
+    setTimeout(loadMap, 1000);
 
-    // --- 1. TRAFFIC CHART (REAL) ---
-    const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
-    const trafficChart = new Chart(ctxTraffic, {
-        type: 'line',
-        data: { labels: Array(20).fill(''), datasets: [
-            { label: 'TX (Up)', data: Array(20).fill(0), borderColor: '#00fff2', borderWidth: 1, fill: false },
-            { label: 'RX (Down)', data: Array(20).fill(0), borderColor: '#4070f4', borderWidth: 1, fill: false }
-        ]},
-        options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: {display:false}, y: {grid:{color:'#222'}} } }
-    });
-
-    // --- 2. RESOURCE CHART (REAL CPU/RAM) ---
+    // 2. RESOURCE CHART (Real Data)
     const ctxRes = document.getElementById('resourceChart').getContext('2d');
     const resChart = new Chart(ctxRes, {
         type: 'line',
         data: { labels: Array(20).fill(''), datasets: [
-            { label: 'CPU %', data: Array(20).fill(0), borderColor: '#ff9f43', borderWidth: 1, fill: true, backgroundColor: 'rgba(255, 159, 67, 0.1)' },
-            { label: 'RAM %', data: Array(20).fill(0), borderColor: '#2ecc71', borderWidth: 1, fill: true, backgroundColor: 'rgba(46, 204, 113, 0.1)' }
+            { label: 'CPU %', data: Array(20).fill(0), borderColor: '#ff9f43', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+            { label: 'RAM %', data: Array(20).fill(0), borderColor: '#2ecc71', borderWidth: 2, pointRadius: 0, tension: 0.4 }
         ]},
         options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: {display:false}, y: {min:0, max:100, grid:{color:'#222'}} } }
     });
 
-    // --- LISTEN FOR REAL METRICS ---
-    socket.on('system_stats', (data) => {
-        // Update Traffic
-        trafficChart.data.datasets[0].data.shift(); trafficChart.data.datasets[0].data.push(data.tx);
-        trafficChart.data.datasets[1].data.shift(); trafficChart.data.datasets[1].data.push(data.rx);
-        trafficChart.update();
-
-        // Update CPU/RAM
-        resChart.data.datasets[0].data.shift(); resChart.data.datasets[0].data.push(data.cpu);
-        resChart.data.datasets[1].data.shift(); resChart.data.datasets[1].data.push(data.ram);
-        resChart.update();
+    // 3. TRAFFIC CHART (Real Data)
+    const ctxTraff = document.getElementById('trafficChart').getContext('2d');
+    const traffChart = new Chart(ctxTraff, {
+        type: 'line',
+        data: { labels: Array(20).fill(''), datasets: [
+            { label: 'TX (Up)', data: Array(20).fill(0), borderColor: '#00fff2', borderWidth: 1, fill: true, backgroundColor: 'rgba(0, 255, 242, 0.1)' },
+            { label: 'RX (Down)', data: Array(20).fill(0), borderColor: '#4070f4', borderWidth: 1, fill: true, backgroundColor: 'rgba(64, 112, 244, 0.1)' }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: {display:false}, y: {grid:{color:'#222'}} } }
     });
 
-    // --- 3. TERMINAL & LOGS ---
+    // UPDATE CHARTS LIVE
+    socket.on('system_stats', (d) => {
+        // CPU/RAM
+        resChart.data.datasets[0].data.shift(); resChart.data.datasets[0].data.push(d.cpu);
+        resChart.data.datasets[1].data.shift(); resChart.data.datasets[1].data.push(d.ram);
+        resChart.update();
+        // Traffic
+        traffChart.data.datasets[0].data.shift(); traffChart.data.datasets[0].data.push(d.tx);
+        traffChart.data.datasets[1].data.shift(); traffChart.data.datasets[1].data.push(d.rx);
+        traffChart.update();
+    });
+
+    // 4. TERMINAL & LOGS
     const termOut = document.getElementById('termOut');
     const logTable = document.getElementById('logTable').getElementsByTagName('tbody')[0];
 
     function startPing() {
         const ip = document.getElementById('pingIP').value;
-        if(ip) {
-            termOut.innerHTML += `<div style="color:#f1c40f">> Pinging ${ip}...</div>`;
-            socket.emit('start_ping', {ip: ip});
-        }
+        if(ip) { termOut.innerHTML += `<div style="color:#f1c40f">> Pinging ${ip}...</div>`; socket.emit('start_ping', {ip: ip}); }
     }
     function stopPing() { socket.emit('stop_ping'); }
 
-    socket.on('ping_output', (data) => {
+    socket.on('ping_output', (d) => {
         const div = document.createElement('div');
-        div.innerText = data.line;
-        div.style.color = data.line.includes('Reply') ? '#2ecc71' : '#ccc';
-        if(data.line.includes('out') || data.line.includes('error')) div.style.color = '#ff4757';
+        div.innerText = d.line;
+        div.style.color = d.line.includes('Reply') ? '#2ecc71' : '#ccc';
+        if(d.line.includes('out') || d.line.includes('error')) div.style.color = '#ff4757';
         termOut.appendChild(div);
         termOut.scrollTop = termOut.scrollHeight;
     });
 
-    // Live Log Update
-    socket.on('log_update', (data) => {
+    socket.on('log_update', (d) => {
         const row = logTable.insertRow(0);
         row.classList.add('log-flash');
-        const color = data.status === 'UP' ? 'bg-green' : 'bg-red';
-        row.innerHTML = `
-            <td>${data.time}</td>
-            <td>${data.device}</td>
-            <td><span class="badge ${color}">${data.status}</span></td>
-            <td>${data.msg}</td>
-        `;
-        if(logTable.rows.length > 50) logTable.deleteRow(50); // Keep last 50
+        const bg = d.status === 'UP' ? 'bg-green' : 'bg-red';
+        row.innerHTML = `<td>${d.time}</td><td>${d.device}</td><td><span class="badge ${bg}">${d.status}</span></td><td>${d.msg}</td>`;
+        if(logTable.rows.length > 50) logTable.deleteRow(50);
+
+        // ALERT SOUND ON DOWN LOG
+        if(d.status === 'DOWN') {
+            document.getElementById('alertAudio').play().catch(e=>console.log("Audio blocked"));
+        }
     });
 
-    // --- 4. POPUP LOGIC ---
-    const allDevices = [
-        {% for d in devices %} {name:"{{d.name}}", ip:"{{d.ip}}", state:"{{d.state}}"}, {% endfor %}
-    ];
+    // 5. POPUP & SOUND
     function openModal(state) {
+        const allDevices = [
+            {% for d in devices %} {name:"{{d.name}}", ip:"{{d.ip}}", state:"{{d.state}}"}, {% endfor %}
+        ];
         const list = document.getElementById('modalList');
         list.innerHTML = '';
         const filtered = allDevices.filter(d => d.state === state);
         if(filtered.length === 0) list.innerHTML = '<div style="padding:10px; color:#666;">No devices found.</div>';
-
         filtered.forEach(d => {
-            list.innerHTML += `
-                <div class="list-item">
-                    <span><b>${d.name}</b> (${d.ip})</span>
-                    <span style="color:${state==='UP'?'#2ecc71':'#ff4757'}">${d.state}</span>
-                </div>`;
+            list.innerHTML += `<div class="list-item"><span><b>${d.name}</b> (${d.ip})</span><span style="color:${state==='UP'?'#2ecc71':'#ff4757'}">${d.state}</span></div>`;
         });
         document.getElementById('listModal').style.display = 'flex';
     }
 
-    // --- 5. SOUND UPLOAD & ALERT ---
     function uploadSound(input) {
         const file = input.files[0];
         if(!file) return;
-        const formData = new FormData();
-        formData.append('file', file);
-
-        fetch('/upload_sound', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-            alert(data.message);
-            if(data.success) {
-                // Reload audio src to fetch new file
-                const audio = document.getElementById('alertAudio');
-                audio.src = audio.src.split('?')[0] + '?t=' + new Date().getTime();
-            }
+        const fd = new FormData(); fd.append('file', file);
+        fetch('/upload_sound', {method:'POST', body:fd}).then(r=>r.json()).then(d=>{
+            alert(d.message);
+            if(d.success) document.getElementById('alertAudio').src += '?t='+new Date().getTime();
         });
     }
-
-    // Play sound on Critical Alert (from Backend)
-    socket.on('incident_down', (data) => {
-        const audio = document.getElementById('alertAudio');
-        audio.play().catch(e => console.log("Audio play blocked: Interaction needed"));
-    });
-
 </script>
 
 {% endblock %}

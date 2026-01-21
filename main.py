@@ -4,13 +4,12 @@ import time
 import webview
 import subprocess
 import platform
-import psutil  # SYSTEM MONITORING
+import psutil
 import os
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, emit
 from config import Config
 from core.database import db, User
-from core.security import SecurityManager
 from network.pinger import PingWorker
 from web_ui.routes import bp as main_bp
 
@@ -18,10 +17,8 @@ from web_ui.routes import bp as main_bp
 def create_app():
     app = Flask(__name__, static_folder='web_ui/static', static_url_path='/static')
     app.config.from_object(Config)
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB Limit
     db.init_app(app)
-
-    # Increase max upload size for audio files (e.g., 5MB)
-    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
     from flask_login import LoginManager
     login_manager = LoginManager()
@@ -34,26 +31,19 @@ def create_app():
 
     app.register_blueprint(main_bp)
 
-    # --- SOUND UPLOAD ROUTE ---
+    # --- SOUND UPLOAD ---
     @app.route('/upload_sound', methods=['POST'])
     def upload_sound():
-        if 'file' not in request.files:
-            return jsonify({'success': False, 'message': 'No file part'})
+        if 'file' not in request.files: return jsonify({'success': False, 'message': 'No file'})
         file = request.files['file']
-        if file.filename == '':
-            return jsonify({'success': False, 'message': 'No selected file'})
+        if file.filename == '': return jsonify({'success': False, 'message': 'No selection'})
 
-        if file and file.filename.endswith(('.mp3', '.wav', '.ogg')):
-            # Save as 'custom_alert.mp3' to overwrite old one
-            save_path = os.path.join(app.static_folder, 'sounds', 'custom_alert.mp3')
-
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-            file.save(save_path)
-            return jsonify({'success': True, 'message': 'Sound updated!'})
-        else:
-            return jsonify({'success': False, 'message': 'Invalid format. Use mp3/wav'})
+        if file:
+            path = os.path.join(app.static_folder, 'sounds')
+            os.makedirs(path, exist_ok=True)
+            file.save(os.path.join(path, 'custom_alert.mp3'))
+            return jsonify({'success': True, 'message': 'Alert Sound Updated!'})
+        return jsonify({'success': False, 'message': 'Failed'})
 
     return app
 
@@ -68,32 +58,25 @@ ping_stop_event = threading.Event()
 
 def run_real_ping(target_ip):
     global ping_process
-    param = '-t' if platform.system().lower() == 'windows' else '-i 1'
-    cmd_list = ['ping', target_ip, param] if platform.system().lower() == 'windows' else ['ping', target_ip]
+    param = '-t' if platform.system().lower() == 'windows' else '-c 1000'
+    cmd = ['ping', target_ip, param] if platform.system().lower() == 'windows' else ['ping', target_ip]
 
     try:
-        ping_process = subprocess.Popen(
-            cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
-        )
+        ping_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
         for line in iter(ping_process.stdout.readline, ''):
             if ping_stop_event.is_set(): break
             if line:
-                # Emit to Terminal
                 socketio.emit('ping_output', {'line': line.strip()})
-
-                # Emit to Logs (Heartbeat) - Optional: Filter only replies to reduce noise
-                if "Reply" in line or "bytes=" in line:
-                    socketio.emit('log_update', {'time': time.strftime("%H:%M:%S"), 'device': target_ip, 'status': 'UP',
-                                                 'msg': 'Ping Response OK'})
-                elif "timed out" in line or "unreachable" in line:
-                    socketio.emit('log_update',
-                                  {'time': time.strftime("%H:%M:%S"), 'device': target_ip, 'status': 'DOWN',
-                                   'msg': 'Request Timed Out'})
-
+                # Auto Log Update
+                status = "UP" if "Reply" in line or "bytes=" in line else "DOWN"
+                msg = "Response OK" if status == "UP" else "Timeout/Unreachable"
+                socketio.emit('log_update', {
+                    'time': time.strftime("%H:%M:%S"), 'device': target_ip, 'status': status, 'msg': msg
+                })
     except Exception as e:
         socketio.emit('ping_output', {'line': f"Error: {str(e)}"})
     finally:
-        if ping_process: ping_process.terminate(); ping_process = None
+        if ping_process: ping_process.terminate()
 
 
 @socketio.on('start_ping')
@@ -116,46 +99,40 @@ def handle_stop_ping():
 # --- REAL SYSTEM MONITOR (CPU/RAM/NET) ---
 def monitor_resources():
     while True:
-        # CPU & RAM
-        cpu = psutil.cpu_percent(interval=None)
-        ram = psutil.virtual_memory().percent
+        try:
+            # CPU & RAM
+            cpu = psutil.cpu_percent(interval=1)
+            ram = psutil.virtual_memory().percent
 
-        # Network Speed
-        net1 = psutil.net_io_counters()
-        time.sleep(1)
-        net2 = psutil.net_io_counters()
+            # Network Speed Calculation
+            net1 = psutil.net_io_counters()
+            time.sleep(1)  # Wait 1 sec
+            net2 = psutil.net_io_counters()
 
-        sent_mbps = round((net2.bytes_sent - net1.bytes_sent) * 8 / 1024 / 1024, 2)
-        recv_mbps = round((net2.bytes_recv - net1.bytes_recv) * 8 / 1024 / 1024, 2)
+            tx = round((net2.bytes_sent - net1.bytes_sent) * 8 / 1024 / 1024, 2)  # Mbps
+            rx = round((net2.bytes_recv - net1.bytes_recv) * 8 / 1024 / 1024, 2)  # Mbps
 
-        socketio.emit('system_stats', {
-            'cpu': cpu, 'ram': ram,
-            'tx': sent_mbps, 'rx': recv_mbps
-        })
+            socketio.emit('system_stats', {'cpu': cpu, 'ram': ram, 'tx': tx, 'rx': rx})
+        except:
+            pass
 
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()
 
-    pinger = PingWorker(app, socketio)
-    pinger.start()
-
-    sys_thread = threading.Thread(target=monitor_resources)
-    sys_thread.daemon = True
-    sys_thread.start()
+    # Start Background Threads
+    PingWorker(app, socketio).start()
+    threading.Thread(target=monitor_resources, daemon=True).start()
 
 
     def run_server():
-        print(">>> 🌐 RTM SERVER LIVE on http://0.0.0.0:5050")
+        print(">>> RTM SERVER STARTED")
         socketio.run(app, host='0.0.0.0', port=5050, debug=False, use_reloader=False)
 
 
-    t = threading.Thread(target=run_server, daemon=True)
-    t.start()
+    threading.Thread(target=run_server, daemon=True).start()
     time.sleep(1)
 
-    webview.create_window(title="RTM Enterprise Server", url="http://127.0.0.1:5050", width=1280, height=800,
-                          background_color='#0b0c0e')
+    webview.create_window("RTM Enterprise", "http://127.0.0.1:5050", width=1280, height=800, background_color='#0b0c0e')
     webview.start()
-    pinger.stop_event.set()
     sys.exit()
